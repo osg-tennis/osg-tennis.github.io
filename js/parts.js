@@ -349,11 +349,12 @@ function renderBug(el, d, sc, rules) {
   // 最終セットが10ポイントタイブレークのときは、その枠は実際に始まってから出す
   const slots = rules.sets - (rules.mtb ? 1 : 0);
   while (cols.length < slots) cols.push({ empty: true });
-  el.style.gridTemplateColumns = `${d.bugNameW}px 112px ${cols.map(() => '72px').join(' ')}`;
+  const showPt = !sc.win; // 決着後はポイント欄が空になるので、枠ごと消す
+  el.style.gridTemplateColumns = `${d.bugNameW}px ${showPt ? '112px ' : ''}${cols.map(() => '72px').join(' ')}`;
   for (const row of ['a', 'mid', 'b']) {
     if (row === 'mid') {
       el.appendChild(cell('lbl', d.m.lbl || ' '));
-      el.appendChild(cell('', ''));
+      if (showPt) el.appendChild(cell('', ''));
       cols.forEach((c, i) => el.appendChild(cell('sh', c.mtb || (c.r && c.r.mtb) ? 'TB' : 'SET ' + (i + 1))));
       continue;
     }
@@ -363,7 +364,7 @@ function renderBug(el, d, sc, rules) {
     nm.appendChild(nmt);
     if (!sc.win && sc.srv === row) nm.appendChild(cell('srv', ''));
     el.appendChild(nm);
-    el.appendChild(cell('pt', ptText({ sc }, row)));
+    if (showPt) el.appendChild(cell('pt', ptText({ sc }, row)));
     cols.forEach(c => {
       if (c.r) {
         const r = c.r;
@@ -434,11 +435,11 @@ export function renderCanvas(stage, d, sc, rules) {
   p.textContent = ptxt;
   p.classList.toggle('band', !!d.playerBand);
   if (d.playerBand) {
-    // 濃さ（100 で透過なし）と、上下の余白＝帯の縦の長さ
-    p.style.backgroundColor = `rgba(15,31,61,${d.playerBandOpa / 100})`;
+    // 色は css/parts.css 側で作り、濃さだけを変数で渡す（100 で透過なし）
+    p.style.setProperty('--band-a', d.playerBandOpa / 100);
     p.style.paddingTop = p.style.paddingBottom = d.playerBandH + 'px';
   } else {
-    p.style.backgroundColor = '';
+    p.style.removeProperty('--band-a');
     p.style.paddingTop = p.style.paddingBottom = '';
   }
 
