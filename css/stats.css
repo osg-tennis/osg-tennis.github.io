@@ -83,7 +83,8 @@ body.share .layout{grid-template-columns:minmax(0,1fr)}
   .sheet{gap:var(--u-4)}
   .sheet-head .who{font-size:19px}
   .sheet-head .acts{width:100%}
-  .sheet-head .acts > *{flex:1 1 0;min-height:40px;padding:9px 10px;font-size:13px}
+  /* 文字が途中で折り返さないよう、入らないときは次の行へ送る */
+  .sheet-head .acts > *{flex:1 1 auto;min-width:max-content;white-space:nowrap;min-height:40px;padding:9px 12px;font-size:13px}
   .srow{grid-template-columns:60px minmax(0,1fr) 60px;min-height:32px;gap:8px}
   .srow .v{font-size:19px}
   .srow .lab{font-size:11.5px}
