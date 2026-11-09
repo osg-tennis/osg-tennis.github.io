@@ -3,7 +3,7 @@
 テニス日本リーグの YouTube 配信用スコアボード。
 操作画面でスコアを動かすと、配信用ページ（Prism Live Studio のウェブウィジェットに貼る）へ即時に反映される。
 
-公開先： https://khohta0813-star.github.io/osg-scoreboard/
+公開先： https://osg-tennis.github.io/
 
 配信チーム向けの手順は **[使い方.md](使い方.md)** を参照。ここは仕組みの説明。
 
