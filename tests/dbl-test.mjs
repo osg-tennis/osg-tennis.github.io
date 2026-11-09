@@ -1,5 +1,5 @@
 import { defaultState, addPoint, oth, serverPlayer, returnerPlayer } from "../js/parts.js";
-import { analyse } from "../js/stats.js";
+import { analyse, fixDoubles, courtSide } from "../js/stats.js";
 
 let fail=0;
 const ok=(c,m)=>{ if(!c){console.log("NG:",m);fail++} else console.log("ok:",m) };
@@ -101,6 +101,42 @@ ok(tot===recs.length, "選手別サーブ本数の合計が総ポイント数と
 // 記録にサーブした人が無い（シングルス）なら選手別は出ない
 recs = recsOf(game("a")).map(x=>{ const y={...x}; delete y.sp; delete y.rp; return y; });
 ok(analyse(recs, dmeta).players===null, "シングルスの記録では選手別を出さない");
+
+
+// 7) 試合の途中で「入れ替え」を押した場合、セット全体を正しい担当に揃える
+//    （実際の記録で、リターン担当が途中から入れ替わっていた）
+function mk(i, s, rp, pa, pb) {
+  return { t: i*1000, w: 'a', s, sv: 1, set: 0, ga: 0, gb: 0, pa, pb, sp: 0, rp };
+}
+// b がサーブ、a がリターン。デュース側(偶数)を 0、アド側(奇数)を 1 で記録…
+// の途中から、押し間違いで逆の担当が記録されてしまった状態を作る
+const mixedRet = [
+  mk(0,'b',0,0,0), mk(1,'b',1,1,0), mk(2,'b',0,1,1), mk(3,'b',1,2,1),
+  mk(4,'b',1,2,2), mk(5,'b',0,3,2),              // ここから逆になった
+];
+const fixedRet = fixDoubles(mixedRet);
+const sides = fixedRet.map(p => courtSide(p) + ':' + p.rp);
+ok(sides.every(x => x === 'deuce:0' || x === 'ad:1'), "デュース側とアド側で担当が1人ずつに揃う");
+
+// 揃えた結果、各選手はどちらか片方のサイドにしか出ない
+const r2 = analyse(mixedRet, { teams:{a:'A',b:'B'}, rules:{sets:3,games:6,noAd:false,tb:true,mtb:false} });
+ok(r2.players.a[0].ret.ad === 0 && r2.players.a[1].ret.deuce === 0, "選手ごとに片側だけに数字が出る");
+
+// 多数決なので、入れ替えが少数なら元の担当が残る
+ok(fixDoubles(mixedRet)[5].rp === 1, "少数側の記録が多数側に合わせて直る");
+
+// サーブ担当も、セット内のゲーム番号から整合するように直る
+const srvPts = [
+  { t:0, w:'a', s:'a', sv:1, set:0, ga:0, gb:0, pa:0, pb:0, sp:0, rp:0 },
+  { t:1, w:'a', s:'a', sv:1, set:0, ga:2, gb:0, pa:0, pb:0, sp:1, rp:0 },
+  { t:2, w:'a', s:'a', sv:1, set:0, ga:4, gb:0, pa:0, pb:0, sp:1, rp:0 }, // 本当は 0
+];
+const fixedSrv = fixDoubles(srvPts);
+ok(fixedSrv.map(p=>p.sp).join('') === "010", "サーブ担当が1ゲームおきの規則に揃う");
+
+// シングルス（sp/rp が無い記録）は触らない
+const single = [{ t:0, w:'a', s:'a', sv:1, set:0, ga:0, gb:0, pa:0, pb:0 }];
+ok(fixDoubles(single) === single, "シングルスの記録はそのまま");
 
 console.log(fail?`\n${fail} 件 失敗`:"\nすべて成功");
 process.exit(fail?1:0);

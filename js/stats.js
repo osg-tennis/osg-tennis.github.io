@@ -60,7 +60,56 @@ export function groupGames(points) {
   return games;
 }
 
+
+/* ---------- ダブルスの担当のずれを直す ----------
+   ダブルスでは、1つのセットの間
+     ・リターンする人はコートサイドで固定
+     ・サーブはペア内で1ゲームおきに交代
+   と決まっている。操作画面の「入れ替え」は押した時点から先にしか効かないので、
+   試合の途中で直すと、それ以前のポイントは古い担当のまま残ってしまう。
+   ここでセットごとに多数決を取り、セット全体を正しい担当に揃える。 */
+export function fixDoubles(points) {
+  if (!points.some(p => p.sp === 0 || p.sp === 1)) return points;
+
+  // リターン：そのセットでデュースサイドを受けていたのは誰か
+  const retVote = {};
+  // サーブ：そのセットで先にサーブしたのは誰か
+  const srvVote = {};
+  const keyOf = (p, team) => p.set + '|' + team;
+
+  for (const p of points) {
+    if (p.rp === 0 || p.rp === 1) {
+      const k = keyOf(p, OTHER(p.s));
+      retVote[k] = retVote[k] || [0, 0];
+      // アドサイドを受けていたなら、デュースサイドは相方
+      retVote[k][courtSide(p) === 'deuce' ? p.rp : 1 - p.rp]++;
+    }
+    if ((p.sp === 0 || p.sp === 1) && !p.tb) {
+      const k = keyOf(p, p.s);
+      srvVote[k] = srvVote[k] || [0, 0];
+      // そのチームが、このセットで何回目のサーブ番か
+      const turn = Math.floor((p.ga + p.gb) / 2);
+      srvVote[k][(p.sp - turn + 2) % 2]++;
+    }
+  }
+  const pick = v => (v && v[1] > v[0] ? 1 : 0);
+
+  return points.map(p => {
+    const q = { ...p };
+    if (p.rp === 0 || p.rp === 1) {
+      const deuceP = pick(retVote[keyOf(p, OTHER(p.s))]);
+      q.rp = courtSide(p) === 'deuce' ? deuceP : 1 - deuceP;
+    }
+    if ((p.sp === 0 || p.sp === 1) && !p.tb) {
+      const first = pick(srvVote[keyOf(p, p.s)]);
+      q.sp = (first + Math.floor((p.ga + p.gb) / 2)) % 2;
+    }
+    return q;
+  });
+}
+
 export function analyse(points, meta) {
+  points = fixDoubles(points);
   const rules = (meta && meta.rules) || { sets: 3, games: 6, noAd: false, tb: true, mtb: false };
   const sides = ['a', 'b'];
   const blank = () => ({

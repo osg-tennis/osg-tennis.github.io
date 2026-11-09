@@ -5,7 +5,7 @@
 
    画面表示と画像保存は同じ buildSheet() の結果を使うので、内容がずれない。 */
 
-import { analyse, momentum, toCsv, dblLabel } from './stats.js';
+import { analyse, momentum, toCsv, dblLabel, fixDoubles } from './stats.js';
 
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const n = v => (v == null ? '–' : String(v));
@@ -130,6 +130,7 @@ function winner(va, vb, better) {
 /* ---------- 画面に出す ---------- */
 /* タブは作らず縦に1本で並べる。共有リンクで開いた人がそのまま読み下せるように。 */
 export function renderSheet(root, points, meta, opts = {}) {
+  points = fixDoubles(points); // ダブルスの担当のずれを直してから集計する
   const r = analyse(points, meta);
   const secs = buildSheet(r, meta);
   const A = r.stats.a, B = r.stats.b;
