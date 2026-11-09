@@ -219,8 +219,14 @@ export function renderSheet(root, points, meta, opts = {}) {
   if (opts.shareUrl) {
     q('#share').onclick = async () => {
       const b = q('#share');
+      // URL だけでなく要約も入れる。LINE などに貼ると、カードの上に結果が文字で出る
+      const summary = [
+        `${na} vs ${nb}　${meta.score || '記録中'}`,
+        `ポイント ${A.won}-${B.won}　${r.games.length}ゲーム${r.minutes != null ? '　' + r.minutes + '分' : ''}`,
+        opts.shareUrl,
+      ].join('\n');
       try {
-        await navigator.clipboard.writeText(opts.shareUrl);
+        await navigator.clipboard.writeText(summary);
         b.textContent = 'コピーしました';
         b.classList.add('on');
       } catch (e) {
