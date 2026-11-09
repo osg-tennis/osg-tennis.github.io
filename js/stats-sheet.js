@@ -7,6 +7,9 @@
 
 import { analyse, momentum, toCsv, dblLabel, fixDoubles } from './stats.js';
 
+/* 画像を作るときに書体が揃っているよう、先に読み込んでおく */
+if (document.fonts && document.fonts.ready) document.fonts.ready.catch(() => {});
+
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const n = v => (v == null ? '–' : String(v));
 const p = v => (v == null ? '–' : v + '%');
@@ -274,7 +277,6 @@ async function savePng(root, secs, r, meta, na, nb, points) {
   const label = btn.textContent;
   btn.textContent = '作成中…';
   try {
-    if (document.fonts && document.fonts.ready) await document.fonts.ready;
 
     const W = 760; // 論理幅。実際は2倍の解像度で描く
     const PAD = 28;
@@ -464,7 +466,7 @@ async function savePng(root, secs, r, meta, na, nb, points) {
     }
 
     const blob = await new Promise(res => out.toBlob(res, 'image/png'));
-    download(blob, `${meta.id || 'match'}.png`);
+    await deliverImage(blob, `${meta.id || 'match'}.png`);
   } catch (err) {
     alert('画像を作れませんでした：' + (err.message || err));
   } finally {
@@ -481,4 +483,45 @@ function roundRect(g, x, y, w, h, r) {
   g.arcTo(x, y + h, x, y, r);
   g.arcTo(x, y, x + w, y, r);
   g.closePath();
+}
+
+
+/* ---------- 作った画像の渡し方 ----------
+   スマホは共有シートに出す。iPhone なら「画像を保存」で写真アプリに入り、
+   そのまま LINE に送ることもできる。
+   パソコンや共有に対応していない場合は、今までどおりダウンロードする。 */
+async function deliverImage(blob, name) {
+  const file = new File([blob], name, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: name });
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return; // 利用者が閉じただけ
+      // 共有できなかったときは下のやり方に回す
+    }
+  }
+  download(blob, name);
+  showImage(blob, name);
+}
+
+/* 画像を画面に出す。長押し（右クリック）で「写真に追加」「画像を保存」ができる */
+function showImage(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const box = document.createElement('div');
+  box.className = 'shot';
+  box.innerHTML = `
+    <div class="shot-inner">
+      <p class="note">長押しして「<b>写真に追加</b>」を選ぶと、写真アプリに保存できます。</p>
+      <img alt="スコア分析" src="${url}">
+      <div class="row">
+        <a class="btn-wrap" href="${url}" download="${name}"><button type="button" class="ghost">ダウンロード</button></a>
+        <button type="button" class="primary" data-close>閉じる</button>
+      </div>
+    </div>`;
+  const close = () => { box.remove(); URL.revokeObjectURL(url); };
+  box.addEventListener('click', e => {
+    if (e.target === box || e.target.closest('[data-close]')) close();
+  });
+  document.body.appendChild(box);
 }

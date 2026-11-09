@@ -93,3 +93,16 @@ body.share .layout{grid-template-columns:minmax(0,1fr)}
   .wrow .lab{font-size:11px}
   .wrow.names > div{font-size:11px}
 }
+
+/* 作った画像を画面に出す（長押しで写真アプリに保存できるようにする） */
+.shot{
+  position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:var(--u-4);
+  background:rgba(0,0,0,.86);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  overflow:auto;
+}
+.shot-inner{
+  width:100%;max-width:420px;display:flex;flex-direction:column;gap:var(--u-3);
+  margin:auto;padding:var(--u-3) 0;
+}
+.shot img{width:100%;height:auto;display:block;border-radius:var(--u-r);box-shadow:var(--u-shadow)}
+.shot .note{text-align:center}
