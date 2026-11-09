@@ -1,0 +1,67 @@
+/* 分析ページの見た目。シートの行・ページャーは js/stats-sheet.js が作る構造に対応する。
+   共通部分は css/ui.css。 */
+
+.layout{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:var(--u-4);align-items:start}
+.mlist{display:flex;flex-direction:column;gap:var(--u-2);max-height:min(66vh,620px);overflow:auto;padding-right:2px}
+.mitem{
+  text-align:left;width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+  padding:12px 14px;min-height:0;border-radius:var(--u-r);line-height:1.45;
+}
+.mitem b{font-size:14.5px;font-weight:800}
+.mitem small{font-weight:500;color:var(--u-mute);font-size:11.5px}
+.mitem[aria-current=true],.mitem[aria-current=true]:hover{--b-bg:var(--u-accent);--b-ink:var(--u-accent-ink);--b-line:var(--u-accent)}
+.mitem[aria-current=true] small{color:rgba(11,20,38,.72)}
+.empty{color:var(--u-mute);font-size:14px;line-height:1.8;margin:0}
+
+/* ---------- 分析シート ---------- */
+.sheet-card{gap:var(--u-3)}
+.sheet-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--u-3);justify-content:space-between}
+.sheet-head .who{display:flex;align-items:baseline;gap:8px;min-width:0;font-size:17px;font-weight:900;line-height:1.3}
+.sheet-head .who b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sheet-head .who i{font-style:normal;font-size:12px;font-weight:700;color:var(--u-mute);flex:0 0 auto}
+.sheet-head .row{flex:0 0 auto}
+
+.pager{display:flex;gap:var(--u-1);padding:var(--u-1);background:var(--u-bg-2);
+  border:1px solid var(--u-line-soft);border-radius:var(--u-r-xl);overflow-x:auto;scrollbar-width:none}
+.pager::-webkit-scrollbar{display:none}
+.pager button{flex:1 1 auto;min-width:max-content;min-height:42px;border:0;background:transparent;
+  border-radius:calc(var(--u-r-xl) - 4px);color:var(--u-mute);font-size:13.5px}
+.pager button[aria-selected=true]{background:var(--u-card-2);color:var(--u-ink);box-shadow:var(--u-shadow-sm)}
+
+/* 広い画面では数字が左右に離れすぎないよう幅を抑える */
+.sheet{display:flex;flex-direction:column;gap:var(--u-3);width:100%;max-width:760px;margin:0 auto}
+.sheet[hidden]{display:none}
+.sec h3{margin:0 0 4px;font-size:11.5px;font-weight:800;letter-spacing:.12em;color:var(--u-accent)}
+.srow{
+  display:grid;grid-template-columns:64px minmax(0,1fr) 64px;align-items:center;gap:8px;
+  min-height:30px;border-bottom:1px solid var(--u-line-soft);
+}
+.sec .srow:last-child{border-bottom:0}
+.srow .lab{text-align:center;font-size:11.5px;font-weight:500;color:var(--u-mute);line-height:1.3}
+.srow .v{
+  font-family:var(--u-f-num);font-size:19px;font-weight:700;text-align:center;
+  font-variant-numeric:tabular-nums;line-height:1.2;
+}
+.srow .v.win{color:var(--u-accent)}
+.srow.head .v{font-family:var(--u-f);font-size:13px;font-weight:800;color:var(--u-ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.sum{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--u-2)}
+.sum div{display:flex;flex-direction:column;gap:1px;align-items:center;
+  background:var(--u-bg);border:1px solid var(--u-line-soft);border-radius:var(--u-r);padding:6px 4px}
+.sum span{font-size:10.5px;font-weight:700;color:var(--u-mute)}
+.sum b{font-family:var(--u-f-num);font-size:21px;font-weight:700;line-height:1.15;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* スマホでは、試合を選んだら一覧を畳んで分析に画面を使う */
+@media (max-width:860px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .layout.has-sel .pick{display:none}
+  .sheet-card{padding:var(--u-3);gap:var(--u-2)}
+  .srow{grid-template-columns:58px minmax(0,1fr) 58px;min-height:28px}
+  .srow .v{font-size:17px}
+  .srow .lab{font-size:11px}
+  .sheet-head .row button{min-height:38px;padding:8px 12px;font-size:13px}
+  .sheet-head .who{font-size:16px}
+  .sheet-card > .note{font-size:11px;line-height:1.5}
+}

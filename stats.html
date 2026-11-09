@@ -9,31 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Noto+Sans+JP:wght@500;700;900&display=swap">
 <link rel="stylesheet" href="css/ui.css">
-<style>
-.layout{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:var(--u-4);align-items:start}
-@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}}
-.mlist{display:flex;flex-direction:column;gap:var(--u-2);max-height:min(66vh,620px);overflow:auto;padding-right:2px}
-.mitem{
-  text-align:left;width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:3px;
-  padding:12px 14px;min-height:0;border-radius:var(--u-r);line-height:1.45;
-}
-.mitem b{font-size:14.5px;font-weight:800}
-.mitem small{font-weight:500;color:var(--u-mute);font-size:11.5px}
-.mitem[aria-current=true],.mitem[aria-current=true]:hover{--b-bg:var(--u-accent);--b-ink:var(--u-accent-ink);--b-line:var(--u-accent)}
-.mitem[aria-current=true] small{color:rgba(11,20,38,.72)}
-.detail{display:flex;flex-direction:column;gap:var(--u-4)}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{padding:9px 10px;border-bottom:1px solid var(--u-line-soft);text-align:right;font-variant-numeric:tabular-nums}
-th:first-child,td:first-child{text-align:left;color:var(--u-mute);font-weight:500}
-thead th{color:var(--u-ink);font-weight:800;border-bottom:2px solid var(--u-line);font-size:13.5px}
-tbody tr:last-child td{border-bottom:0}
-td b{font-family:var(--u-f-num);font-size:19px;font-weight:700}
-.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:var(--u-3)}
-.sum div{display:flex;flex-direction:column;gap:2px;background:var(--u-bg);border:1px solid var(--u-line-soft);border-radius:var(--u-r);padding:10px 12px}
-.sum span{font-size:11px;font-weight:700;color:var(--u-mute);letter-spacing:.04em}
-.sum b{font-family:var(--u-f-num);font-size:24px;font-weight:700;line-height:1.2}
-.empty{color:var(--u-mute);font-size:14px;line-height:1.8;margin:0}
-</style>
+<link rel="stylesheet" href="css/stats.css">
 </head>
 <body>
 
@@ -61,7 +37,7 @@ td b{font-family:var(--u-f-num);font-size:19px;font-weight:700}
   </header>
 
   <div class="layout">
-    <section class="card">
+    <section class="card pick" id="pick">
       <h2>Matches<span>試合を選ぶ</span></h2>
       <div class="mlist" id="mlist"><p class="empty">読み込み中…</p></div>
     </section>

@@ -41,11 +41,16 @@ courts/{コートID}/
 css/parts.css     配信に映るパーツの見た目（操作画面と配信用で共用）
 css/ui.css        操作画面・入口・分析ページの共通デザイン
 css/control.css   操作画面だけの見た目
+css/stats.css     分析ページの見た目
 js/parts.js       データの形・得点計算・描画（両ページで共用）
 js/db.js          Firebase への接続と読み書き
 js/firebase-config.js  Firebase の接続情報
 js/control.js     操作画面の動き
 js/overlay.js     配信用ページの動き
+js/stats.js       分析の計算（Firebase に触らない）
+js/stats-sheet.js 分析の見せ方（画面表示とPNG出力。Firebase に触らない）
+js/stats-page.js  分析ページのログインと一覧
+tests/            得点計算と分析のテスト
 database.rules.json    セキュリティルール
 ```
 
@@ -70,6 +75,12 @@ python devserver.py
 
 `devserver.py` は確認用の簡易サーバー。CSS や JS を書き換えてもブラウザが古いものを
 使い続けないよう、キャッシュ無効のヘッダーを付け、参照に更新時刻を自動で足す。
+
+テスト（ブラウザもサーバーも要らない）:
+
+```bash
+node tests/score-test.mjs && node tests/stats-test.mjs && node tests/dbl-test.mjs
+```
 
 ルールの反映:
 
