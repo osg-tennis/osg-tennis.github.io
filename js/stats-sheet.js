@@ -289,7 +289,7 @@ async function savePng(root, secs, r, meta, na, nb, points) {
     let H = 150 + 70; // 見出し＋サマリー
     for (const s of secs) H += SEC_HEAD + (s.names ? ROW + 22 : 0) + s.rows.length * ROW + 14;
     H += 242; // 流れのグラフ
-    H += 40; // 注記
+    H += 60; // 注記（多めに取り、最後に切り出す）
 
     const dpr = 2;
     const cv = document.createElement('canvas');
@@ -453,7 +453,17 @@ async function savePng(root, secs, r, meta, na, nb, points) {
     g.textAlign = 'left';
     g.fillText('OSG LIVE スコアボード　得点ボタンの記録から自動集計（ウィナー・ラリー数は含みません）', PAD, y + 8);
 
-    const blob = await new Promise(res => cv.toBlob(res, 'image/png'));
+    // 高さは多めに取ってあるので、実際に描いた分だけ切り出して余白を消す
+    let out = cv;
+    const used = Math.ceil(y + 26);
+    if (used < H) {
+      out = document.createElement('canvas');
+      out.width = W * dpr;
+      out.height = used * dpr;
+      out.getContext('2d').drawImage(cv, 0, 0);
+    }
+
+    const blob = await new Promise(res => out.toBlob(res, 'image/png'));
     download(blob, `${meta.id || 'match'}.png`);
   } catch (err) {
     alert('画像を作れませんでした：' + (err.message || err));
