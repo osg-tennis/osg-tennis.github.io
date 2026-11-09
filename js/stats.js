@@ -50,6 +50,12 @@ export function groupGames(points) {
     g.winner = g.points[g.points.length - 1].w; // ゲームを決めたポイントを取った側
     g.a = g.points.filter(p => p.w === 'a').length;
     g.b = g.points.filter(p => p.w === 'b').length;
+    /* ゲームの途中で「サーブ交代」を押して直すことがあるので、
+       先頭のポイントではなく、そのゲームで多かったほうをサーバーとみなす。
+       同数のときは、あとから直したほうが正しいので最後のポイントを採る。 */
+    const cnt = { a: 0, b: 0 };
+    for (const p of g.points) cnt[p.s]++;
+    g.server = cnt.a === cnt.b ? g.points[g.points.length - 1].s : cnt.a > cnt.b ? 'a' : 'b';
   }
   return games;
 }

@@ -130,5 +130,33 @@ r = analyse(recs, meta());
 const sum = ["a","b"].reduce((t,s)=>t+r.stats[s].side.deuce.served+r.stats[s].side.ad.served,0);
 ok(sum===recs.length, "サイド別サーブ本数の合計が総ポイント数と一致");
 
+
+// 12) ゲーム途中でサーブ交代を押して直した場合は、多かったほうをサーバーとみなす
+//     （実際の記録で、1ゲーム目だけ両チームにまたがっていた）
+const mixed = [
+  { w:'a', s:'a', sv:1, set:0, ga:0, gb:0, pa:0, pb:0 },
+  { w:'b', s:'a', sv:1, set:0, ga:0, gb:0, pa:1, pb:0 },
+  { w:'b', s:'b', sv:1, set:0, ga:0, gb:0, pa:1, pb:1 },
+  { w:'b', s:'b', sv:1, set:0, ga:0, gb:0, pa:1, pb:2 },
+  { w:'b', s:'b', sv:1, set:0, ga:0, gb:0, pa:1, pb:3 },
+].map((p,i)=>({t:i*1000, ...p}));
+let gs = groupGames(mixed);
+ok(gs.length===1 && gs[0].server==="b", "多かったほうをサーバーとする");
+r = analyse(mixed, meta());
+ok(r.stats.b.hold.games===1 && r.stats.a.hold.games===0, "サービスゲームは修正後の側に数える");
+
+// 同数なら、あとから直したほう（最後のポイント）を採る
+const tie = [
+  { w:'a', s:'a', sv:1, set:0, ga:0, gb:0, pa:0, pb:0 },
+  { w:'a', s:'b', sv:1, set:0, ga:0, gb:0, pa:1, pb:0 },
+].map((p,i)=>({t:i*1000, ...p}));
+ok(groupGames(tie)[0].server==="b", "同数なら最後のポイントのサーバー");
+
+// 交互にサーブしていれば 10ゲームで 5/5 になる
+const alt=[]; for(let i=0;i<10;i++){ const s=i%2?'b':'a'; for(let k=0;k<4;k++) alt.push(s); }
+({ recs } = run(alt));
+r = analyse(recs, meta());
+ok(r.stats.a.hold.games===5 && r.stats.b.hold.games===5, "10ゲームなら5回ずつ");
+
 console.log(fail?`\n${fail} 件 失敗`:"\nすべて成功");
 process.exit(fail?1:0);

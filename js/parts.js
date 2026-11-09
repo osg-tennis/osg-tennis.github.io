@@ -270,8 +270,8 @@ export function resultLine(st, d) {
 
 const COURT_SVG = `
 <svg class="court" viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true">
-  <rect width="1920" height="380" fill="#1b2340"/>
-  <rect y="380" width="1920" height="700" fill="#5d8f73"/>
+  <rect width="1920" height="380" fill="#0d0d0f"/>
+  <rect y="380" width="1920" height="700" fill="#3f6b55"/>
   <g fill="none" stroke="#f4f4f4" stroke-width="6">
     <polygon points="560,470 1360,470 1740,1000 180,1000"/>
     <line x1="660" y1="470" x2="370" y2="1000"/><line x1="1260" y1="470" x2="1550" y2="1000"/>

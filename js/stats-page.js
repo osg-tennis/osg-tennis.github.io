@@ -3,7 +3,7 @@
    スマホで見ることを前提に、1画面に収まる単位でページを分けている。
    「画像を保存」を押すと、全項目を1枚のPNGにして保存できる（スクショ不要）。 */
 
-import { app, isConfigured, listMatches, readPoints } from './db.js';
+import { app, isConfigured, listMatches, readPoints, readMatchMeta } from './db.js';
 import { renderSheet } from './stats-sheet.js';
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
@@ -15,13 +15,17 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&am
 let matches = [];
 let current = null;
 
+/* ?match=試合ID で開かれたときは、その試合だけを見せる（ログイン不要の共有リンク） */
+const shareId = new URLSearchParams(location.search).get('match');
+const shareUrl = id => `${location.origin}${location.pathname}?match=${encodeURIComponent(id)}`;
+
 /* ---------- ログイン ---------- */
 const auth = app ? getAuth(app) : null;
 if (auth) {
   setPersistence(auth, browserLocalPersistence).catch(() => {});
   onAuthStateChanged(auth, user => {
-    $('gate').hidden = !!user;
-    if (user) { $('pass').value = ''; loadList(); }
+    $('gate').hidden = !!user || !!shareId;
+    if (user && !shareId) { $('pass').value = ''; loadList(); }
   });
   $('loginForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -79,7 +83,7 @@ $('mlist').addEventListener('click', e => {
 
 /* ---------- 1試合の分析 ---------- */
 async function openMatch(id) {
-  current = matches.find(m => m.id === id);
+  current = matches.find(m => m.id === id) || (await readMatchMeta(id).catch(() => null)) || { id };
   document.querySelectorAll('.mitem').forEach(el => el.setAttribute('aria-current', String(el.dataset.id === id)));
   $('detail').innerHTML = '<section class="card"><p class="empty">読み込み中…</p></section>';
   let points;
@@ -94,5 +98,17 @@ async function openMatch(id) {
     return;
   }
   document.querySelector('.layout').classList.add('has-sel');
-  renderSheet($('detail'), points, current);
+  renderSheet($('detail'), points, current, {
+    shareUrl: shareUrl(id),
+    onPick: shareId ? null : () => {
+      document.querySelector('.layout').classList.remove('has-sel');
+      $('pick').scrollIntoView({ block: 'start', behavior: 'smooth' });
+    },
+  });
+}
+
+/* 共有リンクで開かれたら、その試合をそのまま表示する */
+if (shareId) {
+  document.body.classList.add('share');
+  openMatch(shareId);
 }

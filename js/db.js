@@ -125,6 +125,13 @@ export async function listMatches(limit = 200) {
     .sort((x, y) => (y.startedAt || 0) - (x.startedAt || 0));
 }
 
+/* 1試合の見出しだけを読む（共有リンクで直接開くときに使う） */
+export async function readMatchMeta(matchId) {
+  const snap = await get(ref(db, `matchList/${matchId}`));
+  const v = snap.val();
+  return v ? { id: matchId, ...v } : null;
+}
+
 /* 1試合ぶんのポイント（古い順） */
 export async function readPoints(matchId) {
   const snap = await get(ref(db, `matchPoints/${matchId}`));
