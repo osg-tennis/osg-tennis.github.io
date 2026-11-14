@@ -279,7 +279,8 @@ async function savePng(root, secs, r, meta, na, nb, points) {
   try {
 
     const W = 760; // 論理幅。実際は2倍の解像度で描く
-    const PAD = 28;
+    const PAD = 28; //    左右の余白
+    const EDGE = 56; //   上下の余白
     const ROW = 34;
     const SEC_HEAD = 40;
     const jp = w => `${w} 15px "Noto Sans JP", system-ui, sans-serif`;
@@ -291,7 +292,7 @@ async function savePng(root, secs, r, meta, na, nb, points) {
     let H = 150 + 70; // 見出し＋サマリー
     for (const s of secs) H += SEC_HEAD + (s.names ? ROW + 22 : 0) + s.rows.length * ROW + 14;
     H += 242; // 流れのグラフ
-    H += 60; // 注記（多めに取り、最後に切り出す）
+    H += 60 + EDGE * 2; // 注記と上下の余白（多めに取り、最後に切り出す）
 
     const dpr = 2;
     const cv = document.createElement('canvas');
@@ -305,7 +306,7 @@ async function savePng(root, secs, r, meta, na, nb, points) {
     g.fillStyle = BG;
     g.fillRect(0, 0, W, H);
 
-    let y = PAD;
+    let y = EDGE;
 
     // 見出し
     g.fillStyle = ACCENT;
@@ -457,7 +458,7 @@ async function savePng(root, secs, r, meta, na, nb, points) {
 
     // 高さは多めに取ってあるので、実際に描いた分だけ切り出して余白を消す
     let out = cv;
-    const used = Math.ceil(y + 26);
+    const used = Math.ceil(y + EDGE);
     if (used < H) {
       out = document.createElement('canvas');
       out.width = W * dpr;
