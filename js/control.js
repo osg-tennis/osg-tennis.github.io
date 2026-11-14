@@ -130,6 +130,7 @@ function render() {
   $('fault').classList.toggle('on', !!sc.fault);
   $('fault').textContent = sc.fault ? 'もう一度押すとダブルフォールト' : 'フォルト（続けて2回でダブルフォールト）';
   $('fault').disabled = !!sc.win;
+  $('tbLbl').textContent = `${st.rules.games}-${st.rules.games}でタイブレーク`;
   $('dblBox').hidden = !st.dbl.on;
   if (st.dbl.on) {
     const srv = sc.srv, ret = oth(srv);
@@ -411,16 +412,17 @@ const draftChecks = [
   ['playerBand', v => D().playerBand = v, () => D().playerBand],
 ];
 const ruleChecks = [
-  ['noAd', v => st.rules.noAd = v, () => st.rules.noAd],
   ['tb', v => st.rules.tb = v, () => st.rules.tb],
   ['mtb', v => st.rules.mtb = v, () => st.rules.mtb],
 ];
 draftChecks.forEach(([id, set]) => $(id).addEventListener('change', e => { set(e.target.checked); commitDraft(); }));
 ruleChecks.forEach(([id, set]) => $(id).addEventListener('change', e => { set(e.target.checked); commitRules(); }));
 $('fmt').onchange = e => {
-  const [sets, games] = e.target.value.split('-').map(Number);
+  // 値は「セット数-1セットのゲーム数-ノーアドかどうか」
+  const [sets, games, noAd] = e.target.value.split('-').map(Number);
   st.rules.sets = sets;
   st.rules.games = games;
+  st.rules.noAd = !!noAd;
   commitRules();
 };
 
@@ -430,9 +432,8 @@ function fillForm() {
   $('dblOn').checked = st.dbl.on;
   dblFields.forEach(([id, key]) => { if (document.activeElement !== $(id)) $(id).value = st.dbl.names[key]; });
   draftChecks.concat(ruleChecks).forEach(([id, , get]) => ($(id).checked = get()));
-  const fmt = `${st.rules.sets}-${st.rules.games}`;
+  const fmt = `${st.rules.sets}-${st.rules.games}-${st.rules.noAd ? 1 : 0}`;
   if ([...$('fmt').options].some(o => o.value === fmt)) $('fmt').value = fmt;
-  $('tbLbl').textContent = `${st.rules.games}-${st.rules.games}でタイブレーク`;
 }
 
 /* ---------- ボタン ---------- */

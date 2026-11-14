@@ -125,15 +125,20 @@
       <section class="card">
         <h2>Format<span>試合形式と得点ルール</span><span class="chip now">即時反映</span></h2>
         <label>試合形式<select id="fmt">
-          <option value="1-6">1セットマッチ（6ゲーム先取）</option>
-          <option value="3-6">3セットマッチ（2セット先取）</option>
-          <option value="5-6">5セットマッチ（3セット先取）</option>
-          <option value="1-8">8ゲームマッチ（8ゲーム先取）</option>
+          <option value="1-6-0">1セットマッチ（6ゲーム先取）</option>
+          <option value="1-6-1">1セットマッチ（6ゲーム先取・ノーアド）</option>
+          <option value="3-6-0">3セットマッチ（2セット先取）</option>
+          <option value="3-6-1">3セットマッチ（2セット先取・ノーアド）</option>
+          <option value="5-6-0">5セットマッチ（3セット先取）</option>
+          <option value="5-6-1">5セットマッチ（3セット先取・ノーアド）</option>
+          <option value="1-8-0">8ゲームマッチ（8ゲーム先取）</option>
+          <option value="1-8-1">8ゲームマッチ（8ゲーム先取・ノーアド）</option>
         </select></label>
-        <label class="chk"><input type="checkbox" id="noAd">ノーアドバンテージ</label>
         <label class="chk"><input type="checkbox" id="tb"><span id="tbLbl">6-6でタイブレーク</span></label>
         <label class="chk"><input type="checkbox" id="mtb">最終セットは10ポイントタイブレーク</label>
-        <p class="note">得点の計算に使うため、変えるとすぐに適用されます。8ゲームマッチは「8ゲーム先取」＋「8-8でタイブレーク」で、8オールから7ポイントタイブレークになります。</p>
+        <p class="note">得点の計算に使うため、変えるとすぐに適用されます。<br>
+          <b>ノーアド</b>はデュース（40-40）の次の1点でゲームが決まります。<br>
+          <b>8ゲームマッチ</b>は「8ゲーム先取」＋「8-8でタイブレーク」で、8オールから7ポイントタイブレークになります。</p>
       </section>
 
       <section class="card">
