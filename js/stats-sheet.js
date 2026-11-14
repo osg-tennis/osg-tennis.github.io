@@ -455,6 +455,7 @@ async function savePng(root, secs, r, meta, na, nb, points) {
     g.font = `400 11.5px "Noto Sans JP", sans-serif`;
     g.textAlign = 'left';
     g.fillText('OSG LIVE スコアボード　得点ボタンの記録から自動集計（ウィナー・ラリー数は含みません）', PAD, y + 8);
+    y += 14; // この行の文字の下端まで進めておく（上下の余白を同じにするため）
 
     // 高さは多めに取ってあるので、実際に描いた分だけ切り出して余白を消す
     let out = cv;
