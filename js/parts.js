@@ -17,8 +17,8 @@ export const PARTS = [
    画面の外にはみ出さない。x/y は隅からの余白（1920x1080 換算のピクセル）で、
    テレビで端が切れても欠けないよう、やや内側に取ってある。 */
 export const ANCHOR = {
-  results: { h: 'left', v: 'top', x: 48, y: 48 },
-  bug: { h: 'right', v: 'top', x: 48, y: 48 },
+  results: { h: 'left', v: 'top', x: 48, y: 28 },
+  bug: { h: 'right', v: 'top', x: 28, y: 28 },
   player: { h: 'right', v: 'bottom', x: 48, y: 48 },
   free: { h: 'left', v: 'bottom', x: 48, y: 48 },
 };
@@ -320,6 +320,7 @@ export function mountCanvas(stage, opt = {}) {
   sb.className = 'standby';
   sb.hidden = true;
   sb.appendChild(document.createElement('div')).className = 'sb';
+  sb.appendChild(document.createElement('div')).className = 'sb-bar';
   cv.appendChild(sb);
 
   stage.appendChild(cv);
