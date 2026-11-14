@@ -1,6 +1,6 @@
 /* 配信用ページの中身。
-   courts/{コート}/pub・sc・rules だけを読んで描画する。書き込みはしない。
-   （rules はスコア枠をセット数ぶん出すために必要）
+   courts/{コート}/pub・sc・rules・standby だけを読んで描画する。書き込みはしない。
+   （rules はスコア枠の数、standby は待機画面に使う）
    直前の表示内容をブラウザに控えておき、配信を再起動した直後でもすぐ絵が出るようにしている。 */
 
 import { mountCanvas, renderCanvas, normalize, defaultState } from './parts.js';
@@ -26,14 +26,14 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
 
 function draw() {
   const st = Object.keys(raw).length ? normalize(raw, court) : defaultState(court);
-  renderCanvas(stage, st.pub, st.sc, st.rules);
+  renderCanvas(stage, st.pub, st.sc, st.rules, st.standby);
 }
 
 function onChange(key, val) {
   raw[key] = val;
   draw();
   try {
-    localStorage.setItem(CACHE, JSON.stringify({ pub: raw.pub, sc: raw.sc, rules: raw.rules }));
+    localStorage.setItem(CACHE, JSON.stringify({ pub: raw.pub, sc: raw.sc, rules: raw.rules, standby: raw.standby }));
   } catch (e) {
     /* 控えに失敗しても表示には影響しない */
   }
@@ -43,6 +43,7 @@ if (isConfigured) {
   watchSub(court, 'pub', v => onChange('pub', v));
   watchSub(court, 'sc', v => onChange('sc', v));
   watchSub(court, 'rules', v => onChange('rules', v));
+  watchSub(court, 'standby', v => onChange('standby', v));
 } else {
   console.error('[overlay] js/firebase-config.js に Firebase の接続情報が入っていません');
 }

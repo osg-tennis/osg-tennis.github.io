@@ -77,6 +77,7 @@ let draftTimer = null;
 let draftPending = false;
 let nameTimer = null;
 let dblTimer = null;
+let standbyTimer = null;
 const dblFields = [['dA1', 'a1'], ['dA2', 'a2'], ['dB1', 'b1'], ['dB2', 'b2']];
 /* 読み込みが終わるまでは書き込まない */
 function tooEarly() {
@@ -115,8 +116,8 @@ mountCanvas(stages.live, { court: true });
 /* ---------- 描画 ---------- */
 const dirty = () => JSON.stringify(st.draft) !== JSON.stringify(st.pub);
 function render() {
-  renderCanvas(stages.draft, st.draft, st.sc, st.rules);
-  renderCanvas(stages.live, st.pub, st.sc, st.rules);
+  renderCanvas(stages.draft, st.draft, st.sc, st.rules, st.standby);
+  renderCanvas(stages.live, st.pub, st.sc, st.rules, st.standby);
   const sc = st.sc, t = st.pub.teams, m = st.pub.m;
   $('ptAn').textContent = t.a; $('ptBn').textContent = t.b;
   $('ptAp').textContent = m.pA; $('ptBp').textContent = m.pB;
@@ -132,23 +133,9 @@ function render() {
   $('fault').disabled = !!sc.win;
   $('tbLbl').textContent = `${st.rules.games}-${st.rules.games}でタイブレーク`;
   $('dblBox').hidden = !st.dbl.on;
-  if (st.dbl.on) {
-    const srv = sc.srv, ret = oth(srv);
-    $('dblNow').textContent = '';
-    if (sc.win) {
-      $('dblNow').textContent = '試合終了';
-    } else {
-      const put = (label, who) => {
-        const box = document.createElement('span');
-        const i = document.createElement('i');
-        i.textContent = label;
-        box.append(i, who);
-        $('dblNow').appendChild(box);
-      };
-      put('SERVE', dblName(st.dbl, srv, serverPlayer(sc, st.dbl)));
-      put('RETURN', dblName(st.dbl, ret, returnerPlayer(sc, st.dbl)));
-    }
-  }
+  renderNowBar(sc);
+  $('standbyBtn').textContent = st.standby.on ? '待機画面を消す' : '待機画面を出す';
+  $('standbyBtn').classList.toggle('on', st.standby.on);
   const dt = dirty();
   $('pubBar').classList.toggle('dirty', dt);
   $('pubMsg').textContent = dt
@@ -193,6 +180,7 @@ if (isConfigured) {
     if (loaded && draftPending) next.draft = st.draft;
     if (loaded && nameTimer) next.name = st.name;
     if (loaded && dblTimer) next.dbl = st.dbl;
+    if (loaded && standbyTimer) next.standby = st.standby;
     st = next;
     setLoaded(true);
     fillForm();
@@ -249,6 +237,39 @@ function loginError(err) {
   if (c.includes('network-request-failed')) return 'ネットワークにつながりません。通信を確認してください。';
   if (c.includes('operation-not-allowed')) return 'Firebase でメール／パスワードのログインが有効になっていません。';
   return 'ログインできませんでした：' + (err.message || c);
+}
+
+/* いま誰がサーブ／リターンしているかの帯。
+   ダブルスのときはペアのどちらかまで出し、その場で直せるようにする。 */
+function renderNowBar(sc) {
+  const srv = sc.srv, ret = oth(srv);
+  const team = t => (st.pub.teams[t] || t.toUpperCase());
+  const dbl = st.dbl.on;
+
+  if (sc.win) {
+    $('nbServe').textContent = '試合終了';
+    $('nbRet').hidden = true;
+    $('swapSrv').hidden = true;
+    return;
+  }
+  $('nbRet').hidden = false;
+  $('swapSrv').hidden = !dbl;
+
+  $('nbServe').textContent = dbl
+    ? `${team(srv)}　${dblName(st.dbl, srv, serverPlayer(sc, st.dbl))}`
+    : team(srv);
+  $('srv2').textContent = `${team(ret)}のサーブにする`;
+
+  if (dbl) {
+    // フォアサイド＝デュースサイド、バックサイド＝アドサイド
+    $('nbDeuce').textContent = dblName(st.dbl, ret, st.dbl.deuce[ret]);
+    $('nbAd').textContent = dblName(st.dbl, ret, 1 - st.dbl.deuce[ret]);
+    $('swapRet').hidden = false;
+  } else {
+    $('nbDeuce').textContent = team(ret);
+    $('nbAd').textContent = team(ret);
+    $('swapRet').hidden = true;
+  }
 }
 
 /* ---------- 下書き画面のドラッグ移動・拡大縮小 ---------- */
@@ -365,6 +386,24 @@ const binds = [
 ];
 binds.forEach(([id, set]) => $(id).addEventListener('input', e => { set(e.target.value); commitDraft(); }));
 
+/* 待機画面。スコア操作と同じく、押した瞬間に配信へ出す */
+const wStandby = () => (tooEarly() ? null : send(writeSub(court, 'standby', st.standby)));
+$('standbyBtn').onclick = () => {
+  if (tooEarly()) return;
+  st.standby.on = !st.standby.on;
+  if (st.standby.on && !st.standby.text.trim()) st.standby.text = 'まもなく試合開始です';
+  render();
+  fillForm();
+  wStandby();
+};
+$('standbyText').addEventListener('input', e => {
+  if (tooEarly()) { e.target.value = st.standby.text; return; }
+  st.standby.text = e.target.value;
+  render();
+  clearTimeout(standbyTimer);
+  standbyTimer = setTimeout(() => { standbyTimer = null; wStandby(); }, 300);
+});
+
 /* ダブルスの設定も配信には出ないので、下書きを通さず即時に保存する */
 dblFields.forEach(([id, key]) => {
   $(id).addEventListener('input', e => {
@@ -429,6 +468,7 @@ $('fmt').onchange = e => {
 function fillForm() {
   binds.forEach(([id, , get]) => { if (document.activeElement !== $(id)) $(id).value = get(); });
   if (document.activeElement !== $('courtName')) $('courtName').value = st.name;
+  if (document.activeElement !== $('standbyText')) $('standbyText').value = st.standby.text;
   $('dblOn').checked = st.dbl.on;
   dblFields.forEach(([id, key]) => { if (document.activeElement !== $(id)) $(id).value = st.dbl.names[key]; });
   draftChecks.concat(ruleChecks).forEach(([id, , get]) => ($(id).checked = get()));
@@ -539,7 +579,9 @@ $('undo').onclick = () => {
   if (removed > 0) send(removeLastPoints(st.matchId, removed));
   commitScore();
 };
-$('srv').onclick = () => { st.sc.srv = oth(st.sc.srv); render(); wSc(); };
+const swapServeTeam = () => { if (tooEarly()) return; st.sc.srv = oth(st.sc.srv); render(); wSc(); };
+$('srv').onclick = swapServeTeam;
+$('srv2').onclick = swapServeTeam;
 
 let armed = null;
 $('reset').onclick = () => {

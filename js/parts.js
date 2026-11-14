@@ -86,6 +86,9 @@ export function defaultState(court = 'A') {
       srvFirst: { a: 0, b: 0 },
       deuce: { a: 0, b: 0 },
     },
+    /* 待機画面。カメラの準備中などにスコアの代わりに出す。
+       スコア操作と同じく、押した瞬間に配信へ出る（下書きを通さない） */
+    standby: { on: false, text: 'まもなく試合開始です' },
   };
 }
 
@@ -129,6 +132,7 @@ export function normalize(raw, court = 'A') {
     name: raw && typeof raw.name === 'string' ? raw.name : '',
     matchId: raw && typeof raw.matchId === 'string' ? raw.matchId : '',
     dbl: fill(raw && raw.dbl, def.dbl),
+    standby: fill(raw && raw.standby, def.standby),
   };
   st.sc.done = toArray(raw && raw.sc && raw.sc.done).map(r => ({
     a: Number(r.a) || 0,
@@ -137,6 +141,8 @@ export function normalize(raw, court = 'A') {
     mtb: !!r.mtb,
   }));
   st.sc.win = raw && raw.sc && raw.sc.win ? raw.sc.win : null;
+  st.standby.on = !!st.standby.on;
+  st.standby.text = String(st.standby.text || '');
   st.dbl.on = !!st.dbl.on;
   for (const t of ['a', 'b']) {
     st.dbl.srvFirst[t] = Number(st.dbl.srvFirst[t]) === 1 ? 1 : 0;
@@ -310,6 +316,12 @@ export function mountCanvas(stage, opt = {}) {
     }
     cv.appendChild(w);
   }
+  const sb = document.createElement('div');
+  sb.className = 'standby';
+  sb.hidden = true;
+  sb.appendChild(document.createElement('div')).className = 'sb';
+  cv.appendChild(sb);
+
   stage.appendChild(cv);
   stage.S = 1;
   new ResizeObserver(() => fit(stage)).observe(stage);
@@ -413,9 +425,21 @@ export function place(w, L) {
   w.style.transform = `scale(${L.s})`;
 }
 
-/* d … 表示内容（draft か pub）、sc … スコア、rules … 試合形式（セット枠の数に使う） */
-export function renderCanvas(stage, d, sc, rules) {
+/* d … 表示内容（draft か pub）、sc … スコア、rules … 試合形式（セット枠の数に使う）
+   standby … 待機画面。on のときはスコアなどを隠して一言だけ出す */
+export function renderCanvas(stage, d, sc, rules, standby) {
   const q = s => stage.querySelector(s);
+
+  const sb = q('.standby');
+  const sbOn = !!(standby && standby.on && String(standby.text || '').trim());
+  if (sb) {
+    sb.hidden = !sbOn;
+    q('.standby .sb').textContent = (standby && standby.text) || '';
+  }
+  if (sbOn) {
+    stage.querySelectorAll('.w').forEach(w => (w.hidden = true));
+    return;
+  }
   renderBug(q('.bug'), d, sc, rules);
 
   const r = q('.results');

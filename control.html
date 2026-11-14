@@ -56,6 +56,22 @@
     </div>
   </div>
 
+  <!-- いま誰がサーブ／リターンしているか。どのタブにいても見えて、その場で直せる -->
+  <div class="nowbar" id="nowBar">
+    <div class="nb">
+      <i>SERVE</i>
+      <b id="nbServe">–</b>
+      <button type="button" id="srv2" class="ghost">相手のサーブ</button>
+      <button type="button" id="swapSrv" class="ghost" hidden>ペア内で交代</button>
+    </div>
+    <div class="nb" id="nbRet">
+      <i>RETURN</i>
+      <span>フォア <b id="nbDeuce">–</b></span>
+      <span>バック <b id="nbAd">–</b></span>
+      <button type="button" id="swapRet" class="ghost">入れ替え</button>
+    </div>
+  </div>
+
   <nav class="tabs" role="tablist" aria-label="操作の切り替え">
     <button type="button" role="tab" id="tabBtn-live" aria-controls="tab-live" aria-selected="true" data-tab="live">試合中</button>
     <button type="button" role="tab" id="tabBtn-setup" aria-controls="tab-setup" aria-selected="false" data-tab="setup">試合設定</button>
@@ -65,6 +81,13 @@
   <!-- ============ 試合中 ============ -->
   <div role="tabpanel" id="tab-live" aria-labelledby="tabBtn-live">
     <div class="panel-grid">
+
+      <section class="card">
+        <h2>Standby<span>待機画面</span><span class="chip now">押すと即時に配信へ</span></h2>
+        <button id="standbyBtn" class="primary">待機画面を出す</button>
+        <label>画面に出す文字<input type="text" id="standbyText" placeholder="まもなく試合開始です"></label>
+        <p class="note">カメラの準備中など、スコアの代わりに一言だけ出します。出している間はスコア速報や選手情報は見えません。もう一度押すと元に戻ります。</p>
+      </section>
 
       <section class="card console">
         <h2>Score<span>スコア操作</span><span class="chip now">押すと即時に配信へ</span></h2>
@@ -87,18 +110,13 @@
         <h2>Doubles<span>ダブルスの選手</span><span class="chip now">分析用・即時保存</span></h2>
         <label class="chk"><input type="checkbox" id="dblOn">ダブルスとして記録する<small>配信の表示は変わりません</small></label>
         <div id="dblBox" hidden>
-          <div class="now-line" id="dblNow" aria-live="polite"></div>
-          <div class="row" style="margin-top:12px">
-            <button type="button" id="swapSrv">サーブの人を入れ替え</button>
-            <button type="button" id="swapRet">リターンの人を入れ替え</button>
-          </div>
-          <div class="grid-2" style="margin-top:12px">
+            <div class="grid-2" style="margin-top:12px">
             <label>A1（チームAの1人目）<input type="text" id="dA1"></label>
             <label>A2（チームAの2人目）<input type="text" id="dA2"></label>
             <label>B1（チームBの1人目）<input type="text" id="dB1"></label>
             <label>B2（チームBの2人目）<input type="text" id="dB2"></label>
           </div>
-          <p class="note" style="margin-top:12px">サーブはペア内で1ゲームおき、リターンはコートサイドで固定、という規則から自動で判定します。実際と違っていたら入れ替えボタンを押してください。押した時点から先の記録に反映されます。</p>
+          <p class="note" style="margin-top:12px">サーブはペア内で1ゲームおき、リターンはコートサイドで固定、という規則から自動で判定します。実際と違っていたら、画面上部の帯にある「ペア内で交代」「入れ替え」を押してください。</p>
         </div>
       </section>
 

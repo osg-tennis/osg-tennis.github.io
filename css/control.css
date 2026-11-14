@@ -18,6 +18,29 @@
 .stage.is-live{border-color:rgba(255,69,58,.5);box-shadow:0 0 0 1px rgba(255,69,58,.2)}
 .monitors.hide{display:none}
 
+/* ---------- いま誰が打っているかの帯 ---------- */
+.nowbar{
+  display:flex;flex-wrap:wrap;gap:var(--u-2) var(--u-4);align-items:center;
+  padding:10px var(--u-4);background:var(--u-card);border-radius:var(--u-r-lg);
+  border:1px solid var(--u-line-soft);
+}
+.nb{display:flex;flex-wrap:wrap;align-items:center;gap:var(--u-2) var(--u-3);min-width:0}
+.nb[hidden]{display:none}
+.nb > i{
+  font-style:normal;font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--u-faint);
+  flex:0 0 auto;
+}
+.nb > b{font-size:16px;font-weight:700;white-space:nowrap}
+.nb > span{font-size:12px;color:var(--u-mute);white-space:nowrap}
+.nb > span > b{font-size:15px;font-weight:700;color:var(--u-ink);margin-left:4px}
+.nb button{min-height:34px;padding:6px 12px;font-size:12.5px;flex:0 0 auto}
+.nb button[hidden]{display:none}
+@media (max-width:620px){
+  .nowbar{padding:var(--u-2) var(--u-3);gap:var(--u-2)}
+  .nb{width:100%;justify-content:flex-start}
+  .nb > b{font-size:15px}
+}
+
 /* ---------- 配信に反映バー ---------- */
 .pubbar{
   position:sticky;bottom:0;z-index:20;
