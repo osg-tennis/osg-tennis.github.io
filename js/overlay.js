@@ -33,7 +33,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
 function draw() {
   const st = Object.keys(raw).length ? normalize(raw, court) : defaultState(court);
   const panel = { on: st.statsPanel.on, opa: st.statsPanel.opa, rows: [] };
-  if (panel.on && points.length) {
+  if (panel.on) {
     panel.rows = panelRows(points, { teams: st.pub.teams, rules: st.rules, dbl: st.dbl });
   }
   renderCanvas(stage, st.pub, st.sc, st.rules, st.standby, panel);

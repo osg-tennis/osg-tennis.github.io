@@ -309,9 +309,10 @@ export function toCsv(points, meta) {
 
 /* ---------- 配信画面に出すスタッツ ----------
    映像の上で一目で読める量に絞る。表示は js/parts.js が行う。 */
+/* ポイントがまだ1つも無くても、6行そのままを「–」で返す。
+   こうしないと「スタッツを出す」を押しても画面に何も出ず、壊れたように見える。 */
 export function panelRows(points, meta) {
-  if (!points || !points.length) return [];
-  const r = analyse(points, meta);
+  const r = analyse(points || [], meta);
   const A = r.stats.a, B = r.stats.b;
   const pc = v => (v == null ? '–' : v + '%');
   return [

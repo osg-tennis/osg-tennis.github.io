@@ -123,7 +123,7 @@ mountCanvas(stages.live, { court: true });
 const dirty = () => JSON.stringify(st.draft) !== JSON.stringify(st.pub);
 function render() {
   const panel = { on: st.statsPanel.on, opa: st.statsPanel.opa, rows: [] };
-  if (panel.on && panelPoints.length) {
+  if (panel.on) {
     panel.rows = panelRows(panelPoints, { teams: st.pub.teams, rules: st.rules, dbl: st.dbl });
   }
   renderCanvas(stages.draft, st.draft, st.sc, st.rules, st.standby, panel);
@@ -149,6 +149,8 @@ function render() {
   $('standbyBtn').classList.toggle('on', st.standby.on);
   $('statsBtn').textContent = st.statsPanel.on ? 'スタッツを消す' : 'スタッツを出す';
   $('statsBtn').classList.toggle('on', st.statsPanel.on);
+  /* 出しているのに記録が無いときだけ、数字が「–」になる理由を知らせる */
+  $('statsHint').hidden = !(st.statsPanel.on && !panelPoints.length);
   const dt = dirty();
   $('pubBar').classList.toggle('dirty', dt);
   $('pubMsg').textContent = dt

@@ -1,5 +1,5 @@
 import { defaultState, addPoint, oth } from "../js/parts.js";
-import { analyse, groupGames, winsGameIf, courtSide } from "../js/stats.js";
+import { analyse, groupGames, winsGameIf, courtSide, panelRows } from "../js/stats.js";
 
 let fail=0;
 const ok=(c,m)=>{ if(!c){console.log("NG:",m);fail++} else console.log("ok:",m) };
@@ -157,6 +157,24 @@ const alt=[]; for(let i=0;i<10;i++){ const s=i%2?'b':'a'; for(let k=0;k<4;k++) a
 ({ recs } = run(alt));
 r = analyse(recs, meta());
 ok(r.stats.a.hold.games===5 && r.stats.b.hold.games===5, "10ゲームなら5回ずつ");
+
+/* ---------- 配信画面に出すスタッツの表 ---------- */
+/* 得点がまだ1つも無くても行を返すこと。
+   返さないと「スタッツを出す」を押しても画面に何も出ず、壊れたように見える。 */
+{
+  const rows = panelRows([], meta());
+  ok(rows.length===6, "ポイント0件でも6行返す");
+  ok(rows.every(r=>r.length===3), "どの行も［項目, A, B］の3つ");
+  ok(rows[0][1]==="–" && rows[0][2]==="–", "0件のときの割合は – になる");
+  ok(rows[5][1]==="0" && rows[5][2]==="0", "0件のときの獲得ポイントは 0");
+}
+{
+  const { recs } = run(["a","a","a","a","b","b","b","b"]);
+  const rows = panelRows(recs, meta());
+  ok(rows.length===6, "記録があっても6行");
+  ok(rows[5][1]==="4" && rows[5][2]==="4", "獲得ポイントを数える");
+  ok(panelRows(null, meta()).length===6, "null を渡しても落ちない");
+}
 
 console.log(fail?`\n${fail} 件 失敗`:"\nすべて成功");
 process.exit(fail?1:0);

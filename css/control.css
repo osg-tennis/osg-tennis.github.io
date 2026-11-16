@@ -190,3 +190,9 @@
 }
 .picker footer button{flex:1 1 auto}
 .picker footer .ghost{flex:0 0 auto}
+
+/* スタッツを出したのに、まだ得点が記録されていないときの注意書き */
+.note.warn{
+  color:var(--u-draft);background:rgba(255,214,10,.08);
+  border-radius:var(--u-r);padding:9px 11px;
+}
