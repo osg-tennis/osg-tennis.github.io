@@ -143,3 +143,50 @@
   .pubbar .row{width:100%}
   .pubbar .row > *{flex:1 1 0}
 }
+
+/* .row は display:flex なので、hidden を明示しないと隠れない */
+.row[hidden]{display:none}
+
+/* ---------- 名簿から選手を選ぶ画面 ---------- */
+.picker{
+  width:min(520px,calc(100vw - 32px));max-height:min(80vh,680px);padding:0;
+  background:var(--u-card);color:var(--u-ink);
+  border:1px solid var(--u-line);border-radius:var(--u-r-lg);box-shadow:var(--u-shadow);
+}
+.picker::backdrop{background:rgba(0,0,0,.7)}
+.picker form{display:flex;flex-direction:column;max-height:inherit;min-height:0}
+.picker header{
+  display:flex;align-items:center;gap:var(--u-3);padding:var(--u-4) var(--u-4) var(--u-2);
+}
+.picker header h2{margin:0;flex:1 1 auto;font-size:17px;font-weight:700;letter-spacing:-.01em}
+.picker header button{min-height:36px;padding:0 12px;font-size:18px;flex:0 0 auto}
+.picker .note{padding:0 var(--u-4)}
+.picker .plist{
+  display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0;
+  padding:var(--u-3) var(--u-4);
+}
+.picker .plist button{
+  justify-content:flex-start;text-align:left;gap:var(--u-3);width:100%;
+  --b-bg:transparent;--b-line:var(--u-line-soft);
+}
+.picker .plist button .no{
+  flex:0 0 auto;min-width:26px;font-family:var(--u-f-num);font-size:13px;font-weight:700;
+  color:var(--u-faint);text-align:center;
+}
+.picker .plist button .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.picker .plist button .pick{
+  flex:0 0 auto;width:24px;height:24px;border-radius:50%;
+  border:2px solid var(--u-line);display:flex;align-items:center;justify-content:center;
+  font-family:var(--u-f-num);font-size:13px;font-weight:800;color:transparent;
+}
+.picker .plist button[aria-pressed=true]{--b-bg:var(--u-card-3);--b-line:var(--u-accent)}
+.picker .plist button[aria-pressed=true] .pick{
+  border-color:var(--u-accent);background:var(--u-accent);color:var(--u-accent-ink);
+}
+.picker .plist .empty{margin:0;padding:var(--u-5) 0;text-align:center;color:var(--u-mute);font-size:13px;line-height:1.8}
+.picker footer{
+  display:flex;gap:var(--u-2);padding:var(--u-3) var(--u-4) var(--u-4);
+  border-top:1px solid var(--u-line-soft);
+}
+.picker footer button{flex:1 1 auto}
+.picker footer .ghost{flex:0 0 auto}

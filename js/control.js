@@ -14,9 +14,10 @@ import {
 } from './parts.js';
 import {
   app, isConfigured, courtId, watchCourt, watchConnection, writeSub, writeMany, seedIfEmpty,
-  newMatchId, writeMatchMeta, updateMatchMeta, appendPoint, removeLastPoints,
+  newMatchId, writeMatchMeta, updateMatchMeta, appendPoint, removeLastPoints, watchRoster,
 } from './db.js';
 import { panelRows } from './stats.js';
+import { rosterList, pairLabel } from './roster.js';
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
   setPersistence, browserLocalPersistence,
@@ -31,6 +32,9 @@ const num = (v, lo, hi, def) => {
 };
 const court = courtId();
 const D = () => st.draft;
+
+/* 名簿（teams.html で登録したチームと選手）。最初の描画より前に使うので、ここで用意しておく */
+let roster = []; // [{id,name,kana,players:[{id,name,kana,no}]}]
 
 const courtLabel = () => st.name.trim() || 'COURT ' + court;
 $('overlayLink').href = `overlay.html?court=${court}`;
@@ -153,6 +157,7 @@ function render() {
   $('publish').disabled = !dt;
   $('discard').disabled = !dt;
   renderLay();
+  renderRoster();
 }
 
 /* 右上の状態表示。読み込み中はそちらを優先して出す */
@@ -704,3 +709,134 @@ try {
   if (v && tabBtns.some(b => b.dataset.tab === v)) startTab = v;
 } catch (e) { /* 既定のまま */ }
 showTab(startTab);
+
+/* ---------- 名簿の読み込みと、入力候補づくり ----------
+   チーム名の欄と選手名の欄に入力候補を出し、「名簿から選ぶ」で一覧から選べるようにする。
+   名簿が空でも今までどおり手入力できる。 */
+
+if (isConfigured) {
+  /* 名簿はログインしないと読めないので、ログインできてから読みに行く */
+  let rosterStarted = false;
+  const startRoster = () => {
+    if (rosterStarted || !signedIn) return;
+    rosterStarted = true;
+    watchRoster(raw => { roster = rosterList(raw); renderRoster(); });
+  };
+  if (auth) onAuthStateChanged(auth, () => startRoster());
+  startRoster();
+}
+
+/* チーム名から、その名簿のチームを探す（前後の空白は無視） */
+function teamOf(name) {
+  const key = String(name || '').trim();
+  if (!key) return null;
+  return roster.find(t => t.name === key) || null;
+}
+
+function fillList(id, values) {
+  const dl = $(id);
+  const next = values.map(v => `<option value="${v.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))}">`).join('');
+  if (dl.innerHTML !== next) dl.innerHTML = next;
+}
+
+function renderRoster() {
+  const has = roster.length > 0;
+  $('pickRow').hidden = !has;
+  $('pickNote').hidden = !has;
+  if (!has) { fillList('dlTeams', []); fillList('dlPA', []); fillList('dlPB', []); return; }
+  fillList('dlTeams', roster.map(t => t.name));
+  const ta = teamOf(D().teams.a);
+  const tb = teamOf(D().teams.b);
+  fillList('dlPA', ta ? ta.players.map(p => p.name) : []);
+  fillList('dlPB', tb ? tb.players.map(p => p.name) : []);
+  $('pickA').disabled = !ta;
+  $('pickB').disabled = !tb;
+  $('pickA').textContent = ta ? `名簿から選ぶ（${ta.name}）` : 'チームAを名簿から選ぶと使えます';
+  $('pickB').textContent = tb ? `名簿から選ぶ（${tb.name}）` : 'チームBを名簿から選ぶと使えます';
+}
+
+/* ---------- 名簿から選手を選ぶ画面 ---------- */
+const picker = $('picker');
+let pickSide = 'a';
+let pickTeam = null;
+let picked = [];
+
+function openPicker(side) {
+  const team = teamOf(side === 'a' ? D().teams.a : D().teams.b);
+  if (!team) return;
+  pickSide = side;
+  pickTeam = team;
+  picked = [];
+  $('pickTitle').textContent = `${team.name} の選手`;
+  $('pickHint').textContent = st.dbl.on
+    ? '2人まで選べます。2人選ぶと「山田・佐藤」の形で入り、ダブルスの欄にも入ります。'
+    : '1人選ぶと選手の欄に入ります。2人選ぶとダブルスの形（山田・佐藤）になります。';
+  paintPicker();
+  if (typeof picker.showModal === 'function') picker.showModal();
+  else picker.setAttribute('open', '');
+}
+
+function paintPicker() {
+  const list = $('pickList');
+  if (!pickTeam.players.length) {
+    list.innerHTML = '<p class="empty">このチームにはまだ選手が登録されていません。<br>画面右上の「名簿」から登録してください。</p>';
+  } else {
+    list.innerHTML = pickTeam.players.map(p => {
+      const n = picked.indexOf(p.id);
+      return `<button type="button" data-id="${p.id}" aria-pressed="${n >= 0}">
+        <span class="no">${p.no ? p.no : ''}</span>
+        <span class="nm">${p.name.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))}</span>
+        <span class="pick">${n >= 0 ? n + 1 : ''}</span>
+      </button>`;
+    }).join('');
+    list.querySelectorAll('button').forEach(b => {
+      b.onclick = () => {
+        const id = b.dataset.id;
+        const at = picked.indexOf(id);
+        if (at >= 0) picked.splice(at, 1);
+        else if (picked.length < 2) picked.push(id);
+        else picked = [picked[1], id]; // 3人目を押したら古いほうを外す
+        paintPicker();
+      };
+    });
+  }
+  $('pickOk').disabled = !picked.length;
+  $('pickOk').textContent = picked.length === 2 ? '2人を入れる' : picked.length === 1 ? '1人を入れる' : '決定';
+}
+
+function closePicker() {
+  if (typeof picker.close === 'function') picker.close();
+  else picker.removeAttribute('open');
+}
+
+$('pickA').onclick = () => openPicker('a');
+$('pickB').onclick = () => openPicker('b');
+$('pickClear').onclick = () => { picked = []; paintPicker(); };
+
+$('pickOk').onclick = () => {
+  if (tooEarly() || !picked.length) return;
+  const names = picked.map(id => (pickTeam.players.find(p => p.id === id) || {}).name || '').filter(Boolean);
+  const side = pickSide;
+
+  /* 配信に出る名前。1人ならそのまま、2人なら「山田・佐藤」 */
+  const label = names.length === 2 ? pairLabel(names[0], names[1]) : names[0];
+  if (side === 'a') D().m.pA = label; else D().m.pB = label;
+  $(side === 'a' ? 'pA' : 'pB').value = label;
+  commitDraft();
+
+  /* 2人選んだときは、分析用のダブルスの欄にも入れておく */
+  if (names.length === 2) {
+    const keys = side === 'a' ? ['a1', 'a2'] : ['b1', 'b2'];
+    const ids = side === 'a' ? ['dA1', 'dA2'] : ['dB1', 'dB2'];
+    keys.forEach((k, i) => { st.dbl.names[k] = names[i]; });
+    ids.forEach((id, i) => { $(id).value = names[i]; });
+    wDbl();
+    toast(st.dbl.on
+      ? `${label} を入れました。ダブルスの欄にも入れています。`
+      : `${label} を入れました。ダブルスとして記録するなら「試合中」タブでチェックを入れてください。`);
+  }
+  closePicker();
+};
+
+/* 背景を押したときも閉じる */
+picker.addEventListener('click', e => { if (e.target === picker) closePicker(); });

@@ -1,0 +1,106 @@
+/* 名簿ページ（teams.html）だけの見た目。色や間隔は css/ui.css の変数を使う。 */
+
+.lead{
+  margin:0 0 var(--u-4);font-size:13.5px;line-height:1.8;color:var(--u-mute);max-width:72ch;
+}
+.lead b{color:var(--u-ink-2);font-weight:600}
+
+/* 左にチーム一覧、右に中身。画面が狭いときは縦に積む */
+.layout{
+  display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);
+  gap:var(--u-4);align-items:start;padding-bottom:var(--u-6);
+}
+@media (max-width:860px){ .layout{grid-template-columns:1fr} }
+
+.side{position:sticky;top:var(--u-3)}
+@media (max-width:860px){ .side{position:static} }
+
+.main{display:flex;flex-direction:column;gap:var(--u-4);min-width:0}
+
+.empty{margin:0;padding:var(--u-5) var(--u-3);text-align:center;color:var(--u-mute);font-size:13px;line-height:1.8}
+
+/* ---------- チーム一覧 ---------- */
+.tlist{display:flex;flex-direction:column;gap:6px;max-height:min(58vh,520px);overflow:auto}
+.tlist button{
+  justify-content:flex-start;text-align:left;width:100%;gap:var(--u-3);
+  --b-bg:transparent;--b-line:var(--u-line-soft);padding:10px 13px;
+}
+.tlist button .nm{flex:1 1 auto;min-width:0;font-weight:600;font-size:14.5px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tlist button .ct{
+  flex:0 0 auto;font-family:var(--u-f-num);font-size:13px;font-weight:700;color:var(--u-faint);
+  background:var(--u-card-2);border-radius:var(--u-r-xl);padding:2px 9px;
+}
+.tlist button[aria-pressed=true]{--b-bg:var(--u-card-3);--b-line:var(--u-accent);color:var(--u-ink)}
+.tlist button[aria-pressed=true] .ct{color:var(--u-accent-ink);background:var(--u-accent)}
+
+/* ---------- 選手の表 ---------- */
+.plist{display:flex;flex-direction:column;gap:var(--u-2)}
+.prow{
+  display:grid;grid-template-columns:34px minmax(0,1.6fr) minmax(0,1.3fr) 86px 44px;
+  gap:var(--u-2);align-items:center;
+}
+.prow .idx{
+  font-family:var(--u-f-num);font-size:14px;font-weight:700;color:var(--u-faint);text-align:center;
+}
+.prow input{padding:10px 11px}
+.prow .del{
+  min-height:40px;padding:0;--b-bg:transparent;--b-ink:var(--u-faint);--b-line:transparent;font-size:18px;
+}
+.prow .del:hover{--b-bg:rgba(255,69,58,.14);--b-ink:#ff8a80}
+.phead{
+  display:grid;grid-template-columns:34px minmax(0,1.6fr) minmax(0,1.3fr) 86px 44px;
+  gap:var(--u-2);font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--u-faint);padding:0 2px;
+}
+/* 狭い画面では「名前」を1行目、「かな・背番号」を2行目に折り返す */
+@media (max-width:620px){
+  .phead{display:none}
+  .prow{
+    grid-template-columns:26px minmax(0,1fr) 82px 40px;
+    grid-template-areas:"i n n d" ". k b d";
+    row-gap:6px;
+    padding-bottom:var(--u-2);border-bottom:1px solid var(--u-line-soft);
+  }
+  .prow:last-child{border-bottom:0}
+  .prow .idx{grid-area:i;align-self:start;padding-top:12px;font-size:13px}
+  .prow .f-name{grid-area:n}
+  .prow .f-kana{grid-area:k}
+  .prow .f-no{grid-area:b;text-align:center}
+  .prow .del{grid-area:d;align-self:start;--b-bg:var(--u-card-2)}
+}
+
+/* ---------- CSV の取り込み ---------- */
+label.file{cursor:pointer}
+.fake-btn{
+  display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:11px 17px;
+  background:var(--u-card-2);color:var(--u-ink);border-radius:var(--u-r);
+  font-size:14.5px;font-weight:600;transition:background .15s ease;
+}
+label.file:hover .fake-btn{background:var(--u-card-3)}
+
+.imp{
+  background:var(--u-bg-2);border:1px solid var(--u-line-soft);border-radius:var(--u-r);
+  padding:var(--u-3);display:flex;flex-direction:column;gap:var(--u-3);
+}
+.imp h3{margin:0;font-size:14px;font-weight:700}
+.imp .sum{margin:0;font-size:13px;line-height:1.8;color:var(--u-ink-2)}
+.imp .sum b{color:var(--u-accent);font-family:var(--u-f-num);font-size:16px;padding:0 2px}
+.imp .warn{
+  margin:0;font-size:12.5px;line-height:1.8;color:var(--u-draft);
+  background:rgba(255,214,10,.08);border-radius:var(--u-r);padding:10px 12px;
+  max-height:160px;overflow:auto;white-space:pre-wrap;
+}
+.imp .prev{
+  margin:0;font-size:12.5px;line-height:1.9;color:var(--u-mute);
+  max-height:200px;overflow:auto;
+}
+.imp .prev b{color:var(--u-ink-2);font-weight:600}
+
+/* ---------- 狭い画面 ---------- */
+@media (max-width:560px){
+  .top{padding:var(--u-2) var(--u-3);gap:var(--u-2)}
+  .top .row button{min-height:38px;padding:8px 11px;font-size:12.5px}
+  .state{padding:4px 10px;font-size:11.5px}
+  .card{padding:var(--u-3)}
+  .lead{font-size:13px}
+}

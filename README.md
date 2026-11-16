@@ -15,6 +15,7 @@
 | `control.html?court=A` | 操作画面。ログインが必要。スマホ可 |
 | `overlay.html?court=A` | 配信用。背景透明・操作UIなし。`pub`・`sc`・`rules` だけを読む |
 | `stats.html` | スコア分析。ログインが必要 |
+| `teams.html` | チーム・選手の名簿。CSV で一括登録できる。ログインが必要 |
 
 コートは URL の `?court=` で切り替える（`A`、`B`、…）。大文字に統一され、コートごとにデータは別々。
 
@@ -27,7 +28,13 @@ courts/{コートID}/
   sc      スコア
   rules   得点ルール（セット数・ノーアド・タイブレーク）
   hist    取り消し用の履歴（最大 50 件）
+
+roster/{チームID}/
+  name, kana, order
+  players/{選手ID}/ name, kana, no, order
 ```
+
+名簿（`roster`）は**読み書きともログインが必要**。操作画面が入力候補として読む（配信用ページは読まない）。
 
 反映のしかたは試作版と同じ。
 
@@ -50,6 +57,9 @@ js/overlay.js     配信用ページの動き
 js/stats.js       分析の計算（Firebase に触らない）
 js/stats-sheet.js 分析の見せ方（画面表示とPNG出力。Firebase に触らない）
 js/stats-page.js  分析ページのログインと一覧
+js/roster.js      名簿の整形と CSV の読み書き（Firebase に触らない）
+js/teams-page.js  名簿ページの動き
+css/teams.css     名簿ページの見た目
 tests/            得点計算と分析のテスト
 database.rules.json    セキュリティルール
 ```
@@ -59,7 +69,7 @@ database.rules.json    セキュリティルール
 
 ## セキュリティ
 
-- 読み取りは誰でも可（配信用ページがログインなしで表示できる必要があるため）
+- 読み取りは誰でも可（配信用ページがログインなしで表示できる必要があるため）。ただし名簿（`roster`）だけはログイン必須
 - 書き込みはログイン済みのユーザーのみ（`database.rules.json`）
 - `js/firebase-config.js` の値は公開されても問題ないもの。誰が書き込めるかはルールで決まる
 - Firebase コンソールで **ユーザーの自己登録（sign-up）を無効** にしておくこと

@@ -39,6 +39,7 @@
     <span class="state" id="conn"><b></b><span>読み込み中…</span></span>
     <div class="row" style="flex:0 0 auto">
       <a class="btn-wrap" id="overlayLink" href="overlay.html?court=A" target="_blank" rel="noopener"><button type="button" class="ghost">配信用ページ</button></a>
+      <a class="btn-wrap" href="teams.html" target="_blank" rel="noopener"><button type="button" class="ghost">名簿</button></a>
       <a class="btn-wrap" href="stats.html" target="_blank" rel="noopener"><button type="button" class="ghost">スコア分析</button></a>
       <button type="button" class="ghost" id="logout">ログアウト</button>
     </div>
@@ -118,10 +119,10 @@
         <label class="chk"><input type="checkbox" id="dblOn">ダブルスとして記録する<small>配信の表示は変わりません</small></label>
         <div id="dblBox" hidden>
             <div class="grid-2" style="margin-top:12px">
-            <label>A1（チームAの1人目）<input type="text" id="dA1"></label>
-            <label>A2（チームAの2人目）<input type="text" id="dA2"></label>
-            <label>B1（チームBの1人目）<input type="text" id="dB1"></label>
-            <label>B2（チームBの2人目）<input type="text" id="dB2"></label>
+            <label>A1（チームAの1人目）<input type="text" id="dA1" list="dlPA" autocomplete="off"></label>
+            <label>A2（チームAの2人目）<input type="text" id="dA2" list="dlPA" autocomplete="off"></label>
+            <label>B1（チームBの1人目）<input type="text" id="dB1" list="dlPB" autocomplete="off"></label>
+            <label>B2（チームBの2人目）<input type="text" id="dB2" list="dlPB" autocomplete="off"></label>
           </div>
           <p class="note" style="margin-top:12px">サーブはペア内で1ゲームおき、リターンはコートサイドで固定、という規則から自動で判定します。実際と違っていたら、画面上部の帯にある「ペア内で交代」「入れ替え」を押してください。</p>
         </div>
@@ -137,13 +138,18 @@
       <section class="card">
         <h2>Match<span>試合設定</span><span class="chip drf">下書き</span></h2>
         <div class="grid-2">
-          <label>チームA<input type="text" id="tA"></label>
-          <label>チームB<input type="text" id="tB"></label>
-          <label>選手A（ダブルスは「渡邉・島」）<input type="text" id="pA"></label>
-          <label>選手B<input type="text" id="pB"></label>
+          <label>チームA<input type="text" id="tA" list="dlTeams" autocomplete="off"></label>
+          <label>チームB<input type="text" id="tB" list="dlTeams" autocomplete="off"></label>
+          <label>選手A（ダブルスは「渡邉・島」）<input type="text" id="pA" list="dlPA" autocomplete="off"></label>
+          <label>選手B<input type="text" id="pB" list="dlPB" autocomplete="off"></label>
           <label>種目コード<input type="text" id="code" placeholder="S1 / S2 / D"></label>
           <label>スコア枠ラベル<input type="text" id="lbl" placeholder="SINGLES 2"></label>
         </div>
+        <div class="row" id="pickRow">
+          <button type="button" class="ghost" id="pickA">名簿から選手Aを選ぶ</button>
+          <button type="button" class="ghost" id="pickB">名簿から選手Bを選ぶ</button>
+        </div>
+        <p class="note" id="pickNote" hidden>チーム名を入れると、そのチームの選手から選べます。名簿は画面右上の「<b>名簿</b>」で登録できます。</p>
         <label>選手情報（右下）の表示文<input type="text" id="pOverride" placeholder="空欄なら自動：S2 大矢祥生(OSG) vs 油布将也(LUCENT)"></label>
       </section>
 
@@ -237,6 +243,27 @@
   </div>
 
 </div>
+
+<!-- 名簿から作る入力候補。中身は js/control.js が入れる -->
+<datalist id="dlTeams"></datalist>
+<datalist id="dlPA"></datalist>
+<datalist id="dlPB"></datalist>
+
+<!-- 名簿から選手を選ぶ画面 -->
+<dialog class="picker" id="picker">
+  <form method="dialog">
+    <header>
+      <h2 id="pickTitle">選手を選ぶ</h2>
+      <button type="submit" class="ghost" value="cancel" aria-label="閉じる">×</button>
+    </header>
+    <p class="note" id="pickHint"></p>
+    <div class="plist" id="pickList"></div>
+    <footer>
+      <button type="button" class="ghost" id="pickClear">選択を消す</button>
+      <button type="button" class="primary" id="pickOk">決定</button>
+    </footer>
+  </form>
+</dialog>
 
 <script type="module" src="js/control.js"></script>
 </body>

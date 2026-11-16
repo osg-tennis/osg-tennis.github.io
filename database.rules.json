@@ -23,6 +23,13 @@
         }
       }
     },
+    "roster": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$teamId": {
+        ".validate": "newData.hasChild('name')"
+      }
+    },
     "matchList": {
       ".read": true,
       ".indexOn": [

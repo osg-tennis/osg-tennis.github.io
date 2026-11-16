@@ -11,7 +11,7 @@
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
 import {
-  getDatabase, ref, onValue, set, update, get, push, query, orderByChild, limitToLast,
+  getDatabase, ref, onValue, set, update, get, push, remove, query, orderByChild, limitToLast,
 } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
 import { firebaseConfig } from './firebase-config.js';
 
@@ -142,4 +142,46 @@ export async function readPoints(matchId) {
   const snap = await get(ref(db, `matchPoints/${matchId}`));
   const v = snap.val() || {};
   return Object.keys(v).sort().map(k => v[k]);
+}
+
+
+/* ---------- 名簿（チームと選手） ----------
+   roster/{チームID} = { name, kana, order, players: { 選手ID: { name, kana, no, order } } }
+   読み書きともログインが必要（配信用ページは使わない）。 */
+
+export function watchRoster(cb) {
+  return onValue(ref(db, 'roster'), snap => cb(snap.val()), err => console.error('[db] 名簿の読み込みに失敗', err));
+}
+
+export async function readRoster() {
+  const snap = await get(ref(db, 'roster'));
+  return snap.val() || {};
+}
+
+/* ID を作る（Firebase の push キー。時刻順に並ぶ） */
+export function newRosterId() {
+  return push(ref(db, 'roster')).key;
+}
+
+/* 1チームぶんを置き換える */
+export function writeTeam(teamId, data) {
+  return set(ref(db, `roster/${teamId}`), data);
+}
+
+/* 1チームの一部だけを直す */
+export function patchTeam(teamId, patch) {
+  return update(ref(db, `roster/${teamId}`), patch);
+}
+
+export function removeTeam(teamId) {
+  return remove(ref(db, `roster/${teamId}`));
+}
+
+export function removePlayer(teamId, playerId) {
+  return remove(ref(db, `roster/${teamId}/players/${playerId}`));
+}
+
+/* CSV の取り込み。名簿をまるごと置き換える */
+export function writeRoster(data) {
+  return set(ref(db, 'roster'), data);
 }
