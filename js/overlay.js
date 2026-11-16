@@ -14,6 +14,11 @@ mountCanvas(stage, {}); // コート絵や編集用のつまみは入れない
 const CACHE = 'osg-overlay-' + court;
 let raw = {}; // Firebase から届いた生の値（pub と sc）
 
+/* スタッツ表示用。いまの試合のポイント記録を追いかけて集計する */
+let points = [];
+let watching = null; // いま見ている試合ID
+let stopPoints = null;
+
 /* 前回の内容をすぐ描く */
 try {
   const cached = localStorage.getItem(CACHE);
@@ -24,11 +29,6 @@ try {
 draw();
 /* 文字の幅は書体が読み込まれると変わるので、読み込み後にもう一度描き直す */
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
-
-/* スタッツ表示用。いまの試合のポイント記録を追いかけて集計する */
-let points = [];
-let watching = null; // いま見ている試合ID
-let stopPoints = null;
 
 function draw() {
   const st = Object.keys(raw).length ? normalize(raw, court) : defaultState(court);
