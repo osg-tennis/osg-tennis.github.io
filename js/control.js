@@ -16,6 +16,7 @@ import {
   app, isConfigured, courtId, watchCourt, watchConnection, writeSub, writeMany, seedIfEmpty,
   newMatchId, writeMatchMeta, updateMatchMeta, appendPoint, removeLastPoints,
 } from './db.js';
+import { panelRows } from './stats.js';
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
   setPersistence, browserLocalPersistence,
@@ -78,6 +79,7 @@ let draftPending = false;
 let nameTimer = null;
 let dblTimer = null;
 let standbyTimer = null;
+let statsTimer = null;
 const dblFields = [['dA1', 'a1'], ['dA2', 'a2'], ['dB1', 'b1'], ['dB2', 'b2']];
 /* 読み込みが終わるまでは書き込まない */
 function tooEarly() {
@@ -116,8 +118,13 @@ mountCanvas(stages.live, { court: true });
 /* ---------- 描画 ---------- */
 const dirty = () => JSON.stringify(st.draft) !== JSON.stringify(st.pub);
 function render() {
-  renderCanvas(stages.draft, st.draft, st.sc, st.rules, st.standby);
-  renderCanvas(stages.live, st.pub, st.sc, st.rules, st.standby);
+  const panel = { on: st.statsPanel.on, opa: st.statsPanel.opa, rows: [] };
+  if (panel.on && panelPoints.length) {
+    panel.rows = panelRows(panelPoints, { teams: st.pub.teams, rules: st.rules, dbl: st.dbl });
+  }
+  renderCanvas(stages.draft, st.draft, st.sc, st.rules, st.standby, panel);
+  renderCanvas(stages.live, st.pub, st.sc, st.rules, st.standby, panel);
+  followMatchPoints();
   const sc = st.sc, t = st.pub.teams, m = st.pub.m;
   $('ptAn').textContent = t.a; $('ptBn').textContent = t.b;
   $('ptAp').textContent = m.pA; $('ptBp').textContent = m.pB;
@@ -136,6 +143,8 @@ function render() {
   renderNowBar(sc);
   $('standbyBtn').textContent = st.standby.on ? '待機画面を消す' : '待機画面を出す';
   $('standbyBtn').classList.toggle('on', st.standby.on);
+  $('statsBtn').textContent = st.statsPanel.on ? 'スタッツを消す' : 'スタッツを出す';
+  $('statsBtn').classList.toggle('on', st.statsPanel.on);
   const dt = dirty();
   $('pubBar').classList.toggle('dirty', dt);
   $('pubMsg').textContent = dt
@@ -181,6 +190,7 @@ if (isConfigured) {
     if (loaded && nameTimer) next.name = st.name;
     if (loaded && dblTimer) next.dbl = st.dbl;
     if (loaded && standbyTimer) next.standby = st.standby;
+    if (loaded && statsTimer) next.statsPanel = st.statsPanel;
     st = next;
     setLoaded(true);
     fillForm();
@@ -386,6 +396,39 @@ const binds = [
 ];
 binds.forEach(([id, set]) => $(id).addEventListener('input', e => { set(e.target.value); commitDraft(); }));
 
+/* スタッツ表示用に、いまの試合のポイントを追いかける（出しているときだけ読む） */
+let panelPoints = [];
+let panelWatching = null;
+let stopPanel = null;
+function followMatchPoints() {
+  const want = st.statsPanel.on && st.matchId ? st.matchId : null;
+  if (want === panelWatching) return;
+  if (stopPanel) { stopPanel(); stopPanel = null; }
+  panelWatching = want;
+  panelPoints = [];
+  if (!want) return;
+  stopPanel = watchPath(`matchPoints/${want}`, v => {
+    panelPoints = v ? Object.keys(v).sort().map(k => v[k]) : [];
+    render();
+  });
+}
+
+/* スタッツ表示。押した瞬間に配信へ出す */
+const wStatsPanel = () => (tooEarly() ? null : send(writeSub(court, 'statsPanel', st.statsPanel)));
+$('statsBtn').onclick = () => {
+  if (tooEarly()) return;
+  st.statsPanel.on = !st.statsPanel.on;
+  render();
+  wStatsPanel();
+};
+$('statsOpa').addEventListener('input', e => {
+  if (tooEarly()) { e.target.value = st.statsPanel.opa; return; }
+  st.statsPanel.opa = num(e.target.value, 0, 100, 70);
+  render();
+  clearTimeout(statsTimer);
+  statsTimer = setTimeout(() => { statsTimer = null; wStatsPanel(); }, 300);
+});
+
 /* 待機画面。スコア操作と同じく、押した瞬間に配信へ出す */
 const wStandby = () => (tooEarly() ? null : send(writeSub(court, 'standby', st.standby)));
 $('standbyBtn').onclick = () => {
@@ -469,6 +512,7 @@ function fillForm() {
   binds.forEach(([id, , get]) => { if (document.activeElement !== $(id)) $(id).value = get(); });
   if (document.activeElement !== $('courtName')) $('courtName').value = st.name;
   if (document.activeElement !== $('standbyText')) $('standbyText').value = st.standby.text;
+  if (document.activeElement !== $('statsOpa')) $('statsOpa').value = st.statsPanel.opa;
   $('dblOn').checked = st.dbl.on;
   dblFields.forEach(([id, key]) => { if (document.activeElement !== $(id)) $(id).value = st.dbl.names[key]; });
   draftChecks.concat(ruleChecks).forEach(([id, , get]) => ($(id).checked = get()));

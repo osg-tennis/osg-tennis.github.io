@@ -132,6 +132,11 @@ export async function readMatchMeta(matchId) {
   return v ? { id: matchId, ...v } : null;
 }
 
+/* 好きな場所を監視する（配信ページが試合のポイントを追うのに使う） */
+export function watchPath(path, cb) {
+  return onValue(ref(db, path), snap => cb(snap.val()), err => console.error(`[db] ${path} の読み込みに失敗`, err));
+}
+
 /* 1試合ぶんのポイント（古い順） */
 export async function readPoints(matchId) {
   const snap = await get(ref(db, `matchPoints/${matchId}`));

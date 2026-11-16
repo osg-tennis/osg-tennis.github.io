@@ -4,7 +4,8 @@
    直前の表示内容をブラウザに控えておき、配信を再起動した直後でもすぐ絵が出るようにしている。 */
 
 import { mountCanvas, renderCanvas, normalize, defaultState } from './parts.js';
-import { isConfigured, courtId, watchSub } from './db.js';
+import { isConfigured, courtId, watchSub, watchPath } from './db.js';
+import { panelRows } from './stats.js';
 
 const court = courtId();
 const stage = document.getElementById('stage');
@@ -24,16 +25,40 @@ draw();
 /* 文字の幅は書体が読み込まれると変わるので、読み込み後にもう一度描き直す */
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
 
+/* スタッツ表示用。いまの試合のポイント記録を追いかけて集計する */
+let points = [];
+let watching = null; // いま見ている試合ID
+let stopPoints = null;
+
 function draw() {
   const st = Object.keys(raw).length ? normalize(raw, court) : defaultState(court);
-  renderCanvas(stage, st.pub, st.sc, st.rules, st.standby);
+  const panel = { on: st.statsPanel.on, opa: st.statsPanel.opa, rows: [] };
+  if (panel.on && points.length) {
+    panel.rows = panelRows(points, { teams: st.pub.teams, rules: st.rules, dbl: st.dbl });
+  }
+  renderCanvas(stage, st.pub, st.sc, st.rules, st.standby, panel);
+  followMatch(st.matchId, st.statsPanel.on);
+}
+
+/* スタッツを出すときだけ、その試合のポイントを読む（ふだんは読まない） */
+function followMatch(matchId, on) {
+  const want = on && matchId ? matchId : null;
+  if (want === watching) return;
+  if (stopPoints) { stopPoints(); stopPoints = null; }
+  watching = want;
+  points = [];
+  if (!want) return;
+  stopPoints = watchPath(`matchPoints/${want}`, v => {
+    points = v ? Object.keys(v).sort().map(k => v[k]) : [];
+    draw();
+  });
 }
 
 function onChange(key, val) {
   raw[key] = val;
   draw();
   try {
-    localStorage.setItem(CACHE, JSON.stringify({ pub: raw.pub, sc: raw.sc, rules: raw.rules, standby: raw.standby }));
+    localStorage.setItem(CACHE, JSON.stringify({ pub: raw.pub, sc: raw.sc, rules: raw.rules, standby: raw.standby, statsPanel: raw.statsPanel, matchId: raw.matchId }));
   } catch (e) {
     /* 控えに失敗しても表示には影響しない */
   }
@@ -44,6 +69,8 @@ if (isConfigured) {
   watchSub(court, 'sc', v => onChange('sc', v));
   watchSub(court, 'rules', v => onChange('rules', v));
   watchSub(court, 'standby', v => onChange('standby', v));
+  watchSub(court, 'statsPanel', v => onChange('statsPanel', v));
+  watchSub(court, 'matchId', v => onChange('matchId', v));
 } else {
   console.error('[overlay] js/firebase-config.js に Firebase の接続情報が入っていません');
 }

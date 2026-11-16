@@ -10,6 +10,7 @@ export const PARTS = [
   ['bug', 'スコア速報'],
   ['player', '選手情報'],
   ['free', '自由テキスト'],
+  ['stats', 'スタッツ'],
 ];
 
 /* 各パーツを画面のどの隅から測るか。
@@ -21,6 +22,7 @@ export const ANCHOR = {
   bug: { h: 'right', v: 'top', x: 28, y: 28 },
   player: { h: 'right', v: 'bottom', x: 48, y: 48 },
   free: { h: 'left', v: 'bottom', x: 48, y: 48 },
+  stats: { h: 'center', v: 'top', x: 0, y: 220 }, // 画面の中央寄り
 };
 
 /* 取り消し（undo）用の履歴の上限。
@@ -54,6 +56,7 @@ export function defaultDisplay(court = 'A') {
       bug: { dx: 0, dy: 0, s: 1, v: true },
       player: { dx: 0, dy: 0, s: 1, v: true },
       free: { dx: 0, dy: 0, s: 1, v: true },
+      stats: { dx: 0, dy: 0, s: 1, v: true },
     },
   };
 }
@@ -89,6 +92,8 @@ export function defaultState(court = 'A') {
     /* 待機画面。カメラの準備中などにスコアの代わりに出す。
        スコア操作と同じく、押した瞬間に配信へ出る（下書きを通さない） */
     standby: { on: false, text: 'まもなく試合開始です' },
+    /* 配信画面に出すスタッツ。opa は背景の濃さ（%）で、下げると映像が透ける */
+    statsPanel: { on: false, opa: 70 },
   };
 }
 
@@ -133,6 +138,7 @@ export function normalize(raw, court = 'A') {
     matchId: raw && typeof raw.matchId === 'string' ? raw.matchId : '',
     dbl: fill(raw && raw.dbl, def.dbl),
     standby: fill(raw && raw.standby, def.standby),
+    statsPanel: fill(raw && raw.statsPanel, def.statsPanel),
   };
   st.sc.done = toArray(raw && raw.sc && raw.sc.done).map(r => ({
     a: Number(r.a) || 0,
@@ -141,6 +147,8 @@ export function normalize(raw, court = 'A') {
     mtb: !!r.mtb,
   }));
   st.sc.win = raw && raw.sc && raw.sc.win ? raw.sc.win : null;
+  st.statsPanel.on = !!st.statsPanel.on;
+  st.statsPanel.opa = Math.min(100, Math.max(0, Number(st.statsPanel.opa) ?? 70));
   st.standby.on = !!st.standby.on;
   st.standby.text = String(st.standby.text || '');
   st.dbl.on = !!st.dbl.on;
@@ -307,7 +315,7 @@ export function mountCanvas(stage, opt = {}) {
       w.appendChild(tag);
     }
     const inner = document.createElement('div');
-    inner.className = id === 'bug' ? 'bug' : id + ' outl';
+    inner.className = id === 'bug' || id === 'stats' ? id : id + ' outl';
     w.appendChild(inner);
     if (opt.editable) {
       const h = document.createElement('div');
@@ -403,6 +411,32 @@ function fitNames(el, base) {
   }
 }
 
+/* 配信画面に出すスタッツ。panel = { on, opa, rows:[[項目, A, B], ...] } */
+function renderStats(el, d, panel) {
+  if (!el) return;
+  el.textContent = '';
+  if (!panel || !panel.rows || !panel.rows.length) return;
+  el.style.setProperty('--panel-a', (panel.opa == null ? 70 : panel.opa) / 100);
+
+  const head = document.createElement('div');
+  head.className = 'st-head';
+  const mk = (cls, txt) => {
+    const x = document.createElement('div');
+    x.className = cls;
+    x.textContent = txt;
+    return x;
+  };
+  head.append(mk('st-nm', d.teams.a), mk('st-ttl', 'MATCH STATS'), mk('st-nm', d.teams.b));
+  el.appendChild(head);
+
+  for (const [lab, a, b] of panel.rows) {
+    const row = document.createElement('div');
+    row.className = 'st-row';
+    row.append(mk('st-v', a), mk('st-lab', lab), mk('st-v', b));
+    el.appendChild(row);
+  }
+}
+
 /* 選手情報の表示文。両選手が空欄のときは空文字を返し、パーツを隠す */
 export function playerText(d) {
   const o = (d.m.override || '').trim();
@@ -418,17 +452,19 @@ export function place(w, L) {
   const dx = L.dx || 0,
     dy = L.dy || 0;
   w.style.left = w.style.right = w.style.top = w.style.bottom = '';
-  if (a.h === 'left') w.style.left = a.x + dx + 'px';
+  if (a.h === 'center') w.style.left = CANVAS_W / 2 + dx + 'px';
+  else if (a.h === 'left') w.style.left = a.x + dx + 'px';
   else w.style.right = a.x - dx + 'px';
   if (a.v === 'top') w.style.top = a.y + dy + 'px';
   else w.style.bottom = a.y - dy + 'px';
   w.style.transformOrigin = `${a.h} ${a.v}`;
-  w.style.transform = `scale(${L.s})`;
+  // 中央そろえのときは、自分の幅の半分だけ左へ戻してから拡縮する
+  w.style.transform = (a.h === 'center' ? 'translateX(-50%) ' : '') + `scale(${L.s})`;
 }
 
 /* d … 表示内容（draft か pub）、sc … スコア、rules … 試合形式（セット枠の数に使う）
    standby … 待機画面。on のときはスコアなどを隠して一言だけ出す */
-export function renderCanvas(stage, d, sc, rules, standby) {
+export function renderCanvas(stage, d, sc, rules, standby, panel) {
   const q = s => stage.querySelector(s);
 
   const sb = q('.standby');
@@ -472,12 +508,15 @@ export function renderCanvas(stage, d, sc, rules, standby) {
   f.textContent = d.free;
   f.classList.toggle('band', !!d.freeBand);
 
+  renderStats(q('.stats'), d, panel);
+
   stage.querySelectorAll('.w').forEach(w => {
     const id = w.dataset.id,
       L = d.lay[id];
     let on = L.v;
     if (id === 'free') on = on && d.freeOn && !!d.free.trim();
     if (id === 'player') on = on && !!ptxt;
+    if (id === 'stats') on = on && !!(panel && panel.on && panel.rows && panel.rows.length);
     w.hidden = !on;
     place(w, L);
   });

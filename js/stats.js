@@ -305,3 +305,21 @@ export function toCsv(points, meta) {
     .map(r => r.map(c => (/[",\n]/.test(String(c)) ? `"${String(c).replace(/"/g, '""')}"` : c)).join(','))
     .join('\n');
 }
+
+
+/* ---------- 配信画面に出すスタッツ ----------
+   映像の上で一目で読める量に絞る。表示は js/parts.js が行う。 */
+export function panelRows(points, meta) {
+  if (!points || !points.length) return [];
+  const r = analyse(points, meta);
+  const A = r.stats.a, B = r.stats.b;
+  const pc = v => (v == null ? '–' : v + '%');
+  return [
+    ['1stサーブ確率', pc(A.serve.firstPct), pc(B.serve.firstPct)],
+    ['1stポイント獲得率', pc(A.serve.firstWonPct), pc(B.serve.firstWonPct)],
+    ['2ndポイント獲得率', pc(A.serve.secondWonPct), pc(B.serve.secondWonPct)],
+    ['ブレーク成功 / 機会', `${A.bp.converted} / ${A.bp.chances}`, `${B.bp.converted} / ${B.bp.chances}`],
+    ['サービスキープ率', pc(A.hold.pct), pc(B.hold.pct)],
+    ['獲得ポイント', String(A.won), String(B.won)],
+  ];
+}
