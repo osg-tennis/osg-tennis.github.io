@@ -1,21 +1,23 @@
 import { defaultState, addPoint, oth } from "../js/parts.js";
-import { analyse, groupGames, winsGameIf, courtSide, panelRows } from "../js/stats.js";
+import { analyse, groupGames, winsGameIf, courtSide, panelRows, toCsv } from "../js/stats.js";
 
 let fail=0;
 const ok=(c,m)=>{ if(!c){console.log("NG:",m);fail++} else console.log("ok:",m) };
 
 /* control.js と同じ手順でポイント記録を作る。
-   'a'/'b' … その側が得点、'F' … フォルト（2回続けるとダブルフォールト） */
+   'a'/'b' … その側が得点、'F' … フォルト（2回続けるとダブルフォールト）
+   'E' … サービスエース、'S' … サービスポイント（どちらもサーブ側の得点） */
 function run(actions, rules={}) {
   const st = defaultState("A");
   Object.assign(st.rules, rules);
   const recs = [];
   for (let act of actions) {
-    let df = false;
+    let df = false, tag = "";
     if (act === "F") {
       if (!st.sc.fault) { st.sc.fault = true; continue; }
       act = oth(st.sc.srv); df = true;
     }
+    if (act === "E" || act === "S") { tag = act === "E" ? "ace" : "svp"; act = st.sc.srv; }
     const before = JSON.parse(JSON.stringify(st.sc));
     if (!addPoint(st, act)) continue;
     st.sc.fault = false;
@@ -24,6 +26,8 @@ function run(actions, rules={}) {
     if (before.tb) rec.tb = true;
     if (before.mtb) rec.mtb = true;
     if (df) rec.df = true;
+    if (tag === "ace") rec.ace = true;
+    else if (tag === "svp") rec.svp = true;
     recs.push(rec);
   }
   return { st, recs };
@@ -174,6 +178,50 @@ ok(r.stats.a.hold.games===5 && r.stats.b.hold.games===5, "10ゲームなら5回�
   ok(rows.length===6, "記録があっても6行");
   ok(rows[5][1]==="4" && rows[5][2]==="4", "獲得ポイントを数える");
   ok(panelRows(null, meta()).length===6, "null を渡しても落ちない");
+}
+
+/* ---------- サービスエースとサービスポイント ---------- */
+{
+  /* A のサーブゲーム。エース2本、サービスポイント1本、ふつうに1本 */
+  const { recs } = run(["E","S","E","a"]);
+  const r = analyse(recs, meta({svRec:true}));
+  ok(r.stats.a.serve.ace===2, "エースを2本数える");
+  ok(r.stats.a.serve.svp===1, "サービスポイントを1本数える");
+  ok(r.stats.b.serve.ace===0 && r.stats.b.serve.svp===0, "相手側は0のまま");
+  ok(r.stats.a.won===4, "4本ともサーブ側の得点になる");
+  ok(r.stats.a.serve.firstWon===4, "サーブの獲得数にも入る");
+  ok(r.stats.a.hold.held===1, "キープとして数える");
+}
+{
+  /* 記録していない試合でも落ちず、0のまま */
+  const { recs } = run(["a","a","a","a"]);
+  const r = analyse(recs, meta());
+  ok(r.stats.a.serve.ace===0 && r.stats.a.serve.svp===0, "記録していなければ0");
+}
+{
+  /* セカンドサーブのエースも数える */
+  const { recs } = run(["F","E"]);
+  const r = analyse(recs, meta({svRec:true}));
+  ok(r.stats.a.serve.ace===1, "2ndのエースも数える");
+  ok(recs[0].sv===2, "その記録は2ndとして残る");
+}
+{
+  /* 切替が入のときだけ、配信の表に2行増える */
+  const { recs } = run(["E","S"]);
+  ok(panelRows(recs, meta({svRec:true})).length===8, "記録するときは8行");
+  ok(panelRows(recs, meta()).length===6, "記録しないときは6行のまま");
+  const rows = panelRows(recs, meta({svRec:true}));
+  ok(rows[3][0]==="サービスエース" && rows[3][1]==="1", "エースの行が入る");
+  ok(rows[4][0]==="サービスポイント" && rows[4][1]==="1", "サービスポイントの行が入る");
+}
+{
+  /* CSV にも残る */
+  const { recs } = run(["E","S","a"]);
+  const lines = toCsv(recs, meta({svRec:true})).split(/\r?\n/);
+  ok(lines[0].includes("サーブで決着"), "CSV に列が増える");
+  ok(lines[1].includes("エース"), "1本目はエース");
+  ok(lines[2].includes("サービスポイント"), "2本目はサービスポイント");
+  ok(lines[3].split(",")[9]==="", "ふつうの得点は空欄");
 }
 
 console.log(fail?`\n${fail} 件 失敗`:"\nすべて成功");

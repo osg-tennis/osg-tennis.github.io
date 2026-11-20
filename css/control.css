@@ -196,3 +196,13 @@
   color:var(--u-draft);background:rgba(255,214,10,.08);
   border-radius:var(--u-r);padding:9px 11px;
 }
+
+/* サーブで決まったポイントのボタン。得点ボタンと間違えないよう枠線で区別する */
+.row.sv{display:grid;grid-template-columns:1fr 1fr;gap:var(--u-3)}
+.row.sv button{
+  min-height:52px;font-weight:700;
+  --b-bg:transparent;--b-line:var(--u-accent);--b-ink:var(--u-accent);
+}
+.row.sv button:hover:not(:disabled){--b-bg:rgba(216,242,74,.12)}
+.row.sv button:active:not(:disabled){--b-bg:var(--u-accent);--b-ink:var(--u-accent-ink)}
+.row.sv[hidden]{display:none}

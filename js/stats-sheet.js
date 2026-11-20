@@ -26,7 +26,14 @@ function buildSheet(r, meta) {
         ['ファーストサーブ確率', p(A.serve.firstPct), p(B.serve.firstPct), 'high'],
         ['ファースト獲得率', p(A.serve.firstWonPct), p(B.serve.firstWonPct), 'high'],
         ['セカンド獲得率', p(A.serve.secondWonPct), p(B.serve.secondWonPct), 'high'],
-        ['サービスポイント獲得率', p(A.serve.wonPct), p(B.serve.wonPct), 'high'],
+        ['サーブ獲得率', p(A.serve.wonPct), p(B.serve.wonPct), 'high'],
+        /* 記録を取っていた試合だけ、サーブで決まったポイントを出す */
+        ...(meta && meta.rules && meta.rules.svRec
+          ? [
+              ['サービスエース', n(A.serve.ace), n(B.serve.ace), 'high'],
+              ['サービスポイント', n(A.serve.svp), n(B.serve.svp), 'high'],
+            ]
+          : []),
         ['ダブルフォールト', n(A.serve.df), n(B.serve.df), 'low'],
         ['サーブを打った数', n(A.serve.total), n(B.serve.total), null],
       ],
@@ -91,6 +98,9 @@ function buildSheet(r, meta) {
         line('1st獲得', v => p(v.serve.firstWonPct), 'high'),
         line('2nd獲得', v => p(v.serve.secondWonPct), 'high'),
         line('サーブ獲得', v => p(v.serve.wonPct), 'high'),
+        ...(meta && meta.rules && meta.rules.svRec
+          ? [line('エース', v => n(v.serve.ace), 'high'), line('サービスポイント', v => n(v.serve.svp), 'high')]
+          : []),
         line('ダブルフォールト', v => n(v.serve.df), 'low'),
         line('リターン数', v => n(v.ret.faced), null),
         line('リターン獲得', v => p(v.ret.wonPct), 'high'),

@@ -75,7 +75,9 @@ export function defaultState(court = 'A') {
   return {
     draft: defaultDisplay(court),
     pub: defaultDisplay(court),
-    rules: { sets: 3, games: 6, noAd: false, tb: true, mtb: false },
+    /* svRec … サービスエースとサービスポイントも記録するか。
+       操作の手間が増えるので、必要なときだけ入にする */
+    rules: { sets: 3, games: 6, noAd: false, tb: true, mtb: false, svRec: false },
     sc: emptyScore(),
     hist: [],
     name: '', // コート表示名。空欄なら「COURT 〇」と出る
@@ -161,6 +163,7 @@ export function normalize(raw, court = 'A') {
   st.sc.n = Math.max(0, Number(st.sc.n) || 0);
   st.rules.sets = [1, 3, 5].includes(Number(st.rules.sets)) ? Number(st.rules.sets) : 3;
   st.rules.games = Number(st.rules.games) === 8 ? 8 : 6;
+  st.rules.svRec = !!st.rules.svRec;
   fixLay(st.draft);
   fixLay(st.pub);
   return st;

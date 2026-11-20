@@ -7,6 +7,8 @@
      s   サーバー 'a' / 'b'
      sv  1 … ファーストサーブが入った / 2 … セカンドサーブ
      df  ダブルフォールトなら true
+     ace サービスエース（相手がラケットに当てられなかった）なら true
+     svp サービスポイント（当てたが返せなかった）なら true。ace とは排他
      set 何セット目（0始まり）
      ga,gb ポイント開始時のゲームカウント
      pa,pb ポイント開始時のポイント
@@ -114,7 +116,7 @@ export function analyse(points, meta) {
   const sides = ['a', 'b'];
   const blank = () => ({
     won: 0,
-    serve: { total: 0, first: 0, firstWon: 0, secondWon: 0, df: 0 },
+    serve: { total: 0, first: 0, firstWon: 0, secondWon: 0, df: 0, ace: 0, svp: 0 },
     ret: { firstFaced: 0, firstWon: 0, secondFaced: 0, secondWon: 0 },
     bp: { faced: 0, lost: 0, chances: 0, converted: 0 },
     hold: { games: 0, held: 0 },
@@ -126,7 +128,7 @@ export function analyse(points, meta) {
 
   /* ダブルスで、記録にサーブ／リターンした人が入っているとき用 */
   const blankP = () => ({
-    serve: { total: 0, first: 0, firstWon: 0, secondWon: 0, df: 0, won: 0 },
+    serve: { total: 0, first: 0, firstWon: 0, secondWon: 0, df: 0, won: 0, ace: 0, svp: 0 },
     ret: { faced: 0, won: 0, deuce: 0, deuceWon: 0, ad: 0, adWon: 0 },
   });
   const P = { a: [blankP(), blankP()], b: [blankP(), blankP()] };
@@ -155,6 +157,9 @@ export function analyse(points, meta) {
       else S[rec].ret.secondWon++;
     }
     if (p.df) S[srv].serve.df++;
+    /* サーブで決まったポイント。記録していないときは両方0のまま */
+    if (p.ace) S[srv].serve.ace++;
+    else if (p.svp) S[srv].serve.svp++;
 
     // デュースサイド / アドサイド
     const cs = courtSide(p);
@@ -173,6 +178,8 @@ export function analyse(points, meta) {
         if (p.w === srv) sv.serve.firstWon++;
       } else if (p.w === srv) sv.serve.secondWon++;
       if (p.df) sv.serve.df++;
+      if (p.ace) sv.serve.ace++;
+      else if (p.svp) sv.serve.svp++;
       if (p.w === srv) sv.serve.won++;
     }
     if (p.rp === 0 || p.rp === 1) {
@@ -285,7 +292,7 @@ export function dblLabel(meta, team, idx) {
 
 /* 表計算ソフトで開けるように CSV にする */
 export function toCsv(points, meta) {
-  const head = ['順番', '時刻', 'セット', 'ゲーム', 'ポイント', 'サーバー', 'コートサイド', '1st/2nd', 'ダブルフォールト', 'タイブレーク', 'サーブした人', 'リターンした人', '取った側'];
+  const head = ['順番', '時刻', 'セット', 'ゲーム', 'ポイント', 'サーバー', 'コートサイド', '1st/2nd', 'ダブルフォールト', 'サーブで決着', 'タイブレーク', 'サーブした人', 'リターンした人', '取った側'];
   const rows = points.map((p, i) => [
     i + 1,
     new Date(p.t).toLocaleString('ja-JP'),
@@ -296,6 +303,7 @@ export function toCsv(points, meta) {
     courtSide(p) === 'deuce' ? 'デュース' : 'アド',
     p.sv === 2 ? '2nd' : '1st',
     p.df ? 'はい' : '',
+    p.ace ? 'エース' : p.svp ? 'サービスポイント' : '',
     p.tb ? 'はい' : '',
     p.sp === 0 || p.sp === 1 ? dblLabel(meta, p.s, p.sp) : '',
     p.rp === 0 || p.rp === 1 ? dblLabel(meta, p.s === 'a' ? 'b' : 'a', p.rp) : '',
@@ -315,12 +323,20 @@ export function panelRows(points, meta) {
   const r = analyse(points || [], meta);
   const A = r.stats.a, B = r.stats.b;
   const pc = v => (v == null ? '–' : v + '%');
-  return [
+  const rows = [
     ['1stサーブ確率', pc(A.serve.firstPct), pc(B.serve.firstPct)],
     ['1stポイント獲得率', pc(A.serve.firstWonPct), pc(B.serve.firstWonPct)],
     ['2ndポイント獲得率', pc(A.serve.secondWonPct), pc(B.serve.secondWonPct)],
+  ];
+  /* 記録を取っているときだけ、サーブで決まったポイントの行を足す */
+  if (meta && meta.rules && meta.rules.svRec) {
+    rows.push(['サービスエース', String(A.serve.ace), String(B.serve.ace)]);
+    rows.push(['サービスポイント', String(A.serve.svp), String(B.serve.svp)]);
+  }
+  rows.push(
     ['ブレーク成功 / 機会', `${A.bp.converted} / ${A.bp.chances}`, `${B.bp.converted} / ${B.bp.chances}`],
     ['サービスキープ率', pc(A.hold.pct), pc(B.hold.pct)],
     ['獲得ポイント', String(A.won), String(B.won)],
-  ];
+  );
+  return rows;
 }

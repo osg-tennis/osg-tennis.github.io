@@ -142,6 +142,14 @@ function render() {
   $('fault').classList.toggle('on', !!sc.fault);
   $('fault').textContent = sc.fault ? 'もう一度押すとダブルフォールト' : 'フォルト（続けて2回でダブルフォールト）';
   $('fault').disabled = !!sc.win;
+  /* サーブで決まったポイントのボタン。いまサーブしている側の名前を出す */
+  $('svRow').hidden = !st.rules.svRec;
+  if (st.rules.svRec) {
+    const who = t[sc.srv] || (sc.srv === 'a' ? 'A' : 'B');
+    $('svAce').textContent = `サービスエース（${who}）`;
+    $('svWin').textContent = `サービスポイント（${who}）`;
+    $('svAce').disabled = $('svWin').disabled = !!sc.win;
+  }
   $('tbLbl').textContent = `${st.rules.games}-${st.rules.games}でタイブレーク`;
   $('dblBox').hidden = !st.dbl.on;
   renderNowBar(sc);
@@ -503,6 +511,7 @@ const draftChecks = [
 const ruleChecks = [
   ['tb', v => st.rules.tb = v, () => st.rules.tb],
   ['mtb', v => st.rules.mtb = v, () => st.rules.mtb],
+  ['svRec', v => st.rules.svRec = v, () => st.rules.svRec],
 ];
 draftChecks.forEach(([id, set]) => $(id).addEventListener('change', e => { set(e.target.checked); commitDraft(); }));
 ruleChecks.forEach(([id, set]) => $(id).addEventListener('change', e => { set(e.target.checked); commitRules(); }));
@@ -549,7 +558,7 @@ function matchInfo() {
     players: { a: d.m.pA, b: d.m.pB },
     code: d.m.code,
     lbl: d.m.lbl,
-    rules: { sets: st.rules.sets, games: st.rules.games, noAd: !!st.rules.noAd, tb: !!st.rules.tb, mtb: !!st.rules.mtb },
+    rules: { sets: st.rules.sets, games: st.rules.games, noAd: !!st.rules.noAd, tb: !!st.rules.tb, mtb: !!st.rules.mtb, svRec: !!st.rules.svRec },
     dbl: st.dbl.on ? { on: true, names: { ...st.dbl.names } } : { on: false },
   };
 }
@@ -568,7 +577,8 @@ function refreshMatchInfo() {
   if (st.matchId && loaded) send(updateMatchMeta(st.matchId, matchInfo()));
 }
 
-function logPoint(before, side, df) {
+/* tag … 'ace'（サービスエース）/ 'svp'（サービスポイント）。どちらでもなければ空 */
+function logPoint(before, side, df, tag) {
   const id = ensureMatch();
   const rec = {
     t: Date.now(), // 時刻。配信動画の該当箇所を探すのにも使える
@@ -582,6 +592,8 @@ function logPoint(before, side, df) {
   if (before.tb) rec.tb = true;
   if (before.mtb) rec.mtb = true;
   if (df) rec.df = true;
+  if (tag === 'ace') rec.ace = true;
+  else if (tag === 'svp') rec.svp = true;
   if (st.dbl.on) {
     rec.sp = serverPlayer(before, st.dbl); // サーブした人（0 or 1）
     rec.rp = returnerPlayer(before, st.dbl); // リターンした人
@@ -589,12 +601,12 @@ function logPoint(before, side, df) {
   send(appendPoint(id, rec));
 }
 
-function scorePoint(side, df) {
+function scorePoint(side, df, tag) {
   if (tooEarly()) return;
   const before = clone(st.sc);
   if (!addPoint(st, side)) return;
   st.sc.fault = false;
-  logPoint(before, side, df);
+  logPoint(before, side, df, tag);
   const justWon = st.sc.win && !before.win;
   commitScore();
   if (justWon) {
@@ -608,6 +620,12 @@ function scorePoint(side, df) {
 
 $('ptA').onclick = () => scorePoint('a');
 $('ptB').onclick = () => scorePoint('b');
+
+/* サーブで決まったポイント。どちらも得点はサーブ側に入る。
+   エース … 相手がラケットに当てられなかった
+   サービスポイント … 当てたが返せなかった（エースは含めない） */
+$('svAce').onclick = () => scorePoint(st.sc.srv, false, 'ace');
+$('svWin').onclick = () => scorePoint(st.sc.srv, false, 'svp');
 
 /* フォルト：1回押すとセカンドサーブ、続けて2回でダブルフォールト（相手に得点） */
 $('fault').onclick = () => {
